@@ -1,0 +1,32 @@
+{
+  "name": "ohm-be",
+  "version": "1.0.0",
+  "description": "ohm-be",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "NODE_ENV=development node index.js",
+    "start": "NODE_ENV=production node index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jurelik/ohm-be.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/jurelik/ohm-be/issues"
+  },
+  "homepage": "https://github.com/jurelik/ohm-be#readme",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv-flow": "^3.2.0",
+    "express": "^4.17.1",
+    "pg": "^8.5.1",
+    "pg-hstore": "^2.3.3",
+    "sequelize": "^6.5.0"
+  },
+  "devDependencies": {
+    "sequelize-cli": "^6.2.0"
+  }
+}

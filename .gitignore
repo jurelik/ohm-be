@@ -1,0 +1,9 @@
+/node_modules
+tags
+tags.lock
+tags.temp
+*.swp
+*.tmp
+.env.development
+.env.production
+.DS_Store
