@@ -16,6 +16,7 @@ module.exports = (sequelize, DataTypes) => {
       artist.hasMany(models.album);
       artist.hasMany(models.pin);
       artist.hasMany(models.comment);
+      artist.hasMany(models.file);
     }
   };
   artist.init({

@@ -12,6 +12,7 @@ module.exports = (sequelize, DataTypes) => {
     static associate(models) {
       // define association here
       file.belongsTo(models.song);
+      file.belongsTo(models.artist);
     }
   };
   file.init({
