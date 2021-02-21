@@ -3,7 +3,7 @@ const {
   Model
 } = require('sequelize');
 module.exports = (sequelize, DataTypes) => {
-  class artist extends Model {
+  class submission extends Model {
     /**
      * Helper method for defining associations.
      * This method is not a part of Sequelize lifecycle.
@@ -11,27 +11,20 @@ module.exports = (sequelize, DataTypes) => {
      */
     static associate(models) {
       // define association here
-      artist.hasMany(models.submission);
-      artist.hasMany(models.song);
-      artist.hasMany(models.album);
-      artist.hasMany(models.pin);
-      artist.hasMany(models.comment);
+      submission.belongsTo(models.song);
+      submission.belongsTo(models.album);
+      submission.belongsTo(models.artist);
     }
   };
-  artist.init({
-    name: {
+  submission.init({
+    type: {
       type: DataTypes.STRING,
-      allowNull: false
-    },
-    bio: {
-      type: DataTypes.STRING
-    },
-    location: {
-      type: DataTypes.STRING
+      allowNull: false,
+      isIn: [['song', 'album']]
     }
   }, {
     sequelize,
-    modelName: 'artist',
+    modelName: 'submission',
   });
-  return artist;
+  return submission;
 };

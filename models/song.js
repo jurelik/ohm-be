@@ -13,6 +13,7 @@ module.exports = (sequelize, DataTypes) => {
       // define association here
       song.belongsTo(models.artist);
       song.belongsTo(models.album);
+      song.hasOne(models.submission);
       song.hasMany(models.file);
       song.hasMany(models.comment);
     }
