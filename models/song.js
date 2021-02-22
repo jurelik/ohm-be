@@ -28,7 +28,7 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: false,
       isIn: [['wav', 'mp3']]
     },
-    url: {
+    cid: {
       type: DataTypes.STRING,
       allowNull: false
     },
