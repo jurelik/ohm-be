@@ -16,6 +16,10 @@ app.get('/api/latest', (req, res) => {
   helpers.getLatest(req, res);
 });
 
+app.get('/api/artist/:name', (req, res) => {
+  helpers.getArtist(req, res);
+});
+
 app.listen(process.env.PORT, () => {
   console.log('Server is listening on port ' + process.env.PORT + '.');
 });
