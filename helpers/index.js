@@ -198,7 +198,7 @@ const postUpload = async (req, res) => {
         //Convert tags into a string for postgres
         let stringifiedTags = stringifyTags(_song.tags);
 
-        let song = await db.query(`INSERT INTO songs (title, "fileType", cid, tags, "artistId", "createdAt", "updatedAt") VALUES ('${_song.title}', '${_song.fileType}', '${_song.cid}', ARRAY [${stringifiedTags}], 1, NOW(), NOW()) RETURNING id`, { type: Sequelize.QueryTypes.INSERT, transaction: t });
+        let song = await db.query(`INSERT INTO songs (title, "fileType", cid, tags, "albumId", "artistId", "createdAt", "updatedAt") VALUES ('${_song.title}', '${_song.fileType}', '${_song.cid}', ARRAY [${stringifiedTags}], ${albumId}, 1, NOW(), NOW()) RETURNING id`, { type: Sequelize.QueryTypes.INSERT, transaction: t });
         let songId = song[0][0].id;
 
         //Add files
@@ -209,6 +209,9 @@ const postUpload = async (req, res) => {
           await db.query(`INSERT INTO files (name, type, "fileType", cid, tags, "songId", "artistId", "createdAt", "updatedAt") VALUES ('${file.name}', '${file.type}', '${file.fileType}', '${file.cid}', ARRAY [${stringifiedTags}], ${songId}, 1, NOW(), NOW())`, { type: Sequelize.QueryTypes.INSERT, transaction: t });
         }
       }
+
+      //Add submission
+      await db.query(`INSERT INTO submissions (type, "artistId", "albumId",  "createdAt", "updatedAt") VALUES ('album', 1, ${albumId}, NOW(), NOW())`, { type: Sequelize.QueryTypes.INSERT, transaction: t });
     }
     else {
 
