@@ -79,6 +79,15 @@ const getAlbum = async (id, t) => {
 
 }
 
+const stringifyTags = (tags) => {
+  //Convert tags into a string for postgres
+  let stringified = "";
+  for (let tag of tags) stringified += `'${tag.trim()}', `;
+  stringified = stringified.slice(0, -2);
+
+  return stringified;
+}
+
 //Route handlers
 const getLatest = async (req, res) => {
   const t = await db.transaction();
@@ -165,8 +174,64 @@ const getArtist = async (req, res) => {
   }
 }
 
+const postUpload = async (req, res) => {
+  if (Object.keys(req.body).length === 0) {
+    return res.json({
+      type: 'error',
+      err: 'No payload included in request'
+    });
+  }
+
+  const payload = req.body;
+  const t = await db.transaction();
+
+  try {
+    if (payload.album) {
+      //Convert tags into a string for postgres
+      let stringifiedTags = stringifyTags(payload.album.tags);
+
+      let album = await db.query(`INSERT INTO albums (title, cid, tags, "artistId", "createdAt", "updatedAt") VALUES ('${payload.album.title}', '${payload.album.cid}', ARRAY [${stringifiedTags}], 1, NOW(), NOW()) RETURNING id`, { type: Sequelize.QueryTypes.INSERT, transaction: t });
+      let albumId = album[0][0].id;
+
+      //Add songs
+      for (let _song of payload.songs) {
+        //Convert tags into a string for postgres
+        let stringifiedTags = stringifyTags(_song.tags);
+
+        let song = await db.query(`INSERT INTO songs (title, "fileType", cid, tags, "artistId", "createdAt", "updatedAt") VALUES ('${_song.title}', '${_song.fileType}', '${_song.cid}', ARRAY [${stringifiedTags}], 1, NOW(), NOW()) RETURNING id`, { type: Sequelize.QueryTypes.INSERT, transaction: t });
+        let songId = song[0][0].id;
+
+        //Add files
+        for (let file of _song.files) {
+          //Convert tags into a string for postgres
+          let stringifiedTags = stringifyTags(file.tags);
+
+          await db.query(`INSERT INTO files (name, type, "fileType", cid, tags, "songId", "artistId", "createdAt", "updatedAt") VALUES ('${file.name}', '${file.type}', '${file.fileType}', '${file.cid}', ARRAY [${stringifiedTags}], ${songId}, 1, NOW(), NOW())`, { type: Sequelize.QueryTypes.INSERT, transaction: t });
+        }
+      }
+    }
+    else {
+
+    }
+
+    await t.commit();
+    return res.json({
+      type: 'success'
+    });
+  }
+  catch (err) {
+    await t.rollback();
+    console.error(err);
+    return res.json({
+      type: 'error',
+      err
+    });
+  }
+}
+
 module.exports = {
   initDB,
   getLatest,
-  getArtist
+  getArtist,
+  postUpload
 }
