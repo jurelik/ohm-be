@@ -21,6 +21,7 @@ app.get('/api/artist/:name', (req, res) => {
 });
 
 app.post('/api/upload', express.json(), (req, res) => {
+  console.log('hello')
   helpers.postUpload(req, res);
 });
 
