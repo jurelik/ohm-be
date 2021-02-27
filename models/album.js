@@ -28,6 +28,9 @@ module.exports = (sequelize, DataTypes) => {
     tags: {
       type: DataTypes.ARRAY(DataTypes.STRING),
       allowNull: false
+    },
+    description: {
+      type: DataTypes.STRING
     }
   }, {
     sequelize,

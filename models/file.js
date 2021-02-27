@@ -13,12 +13,17 @@ module.exports = (sequelize, DataTypes) => {
       // define association here
       file.belongsTo(models.song);
       file.belongsTo(models.artist);
+      file.belongsTo(models.file);
     }
   };
   file.init({
     name: {
       type: DataTypes.STRING,
-      allowNull: false
+      validate: {
+        checkOriginal(value) {
+          if (!value && this.type !== 'internal') throw new Error('Name is required when file is not of type "internal"');
+        }
+      }
     },
     type: {
       type: DataTypes.STRING,
@@ -27,16 +32,31 @@ module.exports = (sequelize, DataTypes) => {
     },
     fileType: {
       type: DataTypes.STRING,
-      allowNull: false,
-      isIn: [['wav', 'mp3']]
+      isIn: [['wav', 'mp3']],
+      validate: {
+        checkOriginal(value) {
+          if (!value && this.type !== 'internal') throw new Error('FileType is required when file is not of type "internal"');
+        }
+      }
     },
     cid: {
       type: DataTypes.STRING,
-      allowNull: false
+      validate: {
+        checkOriginal(value) {
+          if (!value && this.type !== 'internal') throw new Error('CID is required when file is not of type "internal"');
+        }
+      }
     },
     tags: {
       type: DataTypes.ARRAY(DataTypes.STRING),
-      allowNull: false
+      validate: {
+        checkOriginal(value) {
+          if (!value && this.type !== 'internal') throw new Error('Tags are required when file is not of type "internal"');
+        }
+      }
+    },
+    info: {
+      type: DataTypes.STRING
     }
   }, {
     sequelize,

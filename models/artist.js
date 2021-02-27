@@ -22,7 +22,8 @@ module.exports = (sequelize, DataTypes) => {
   artist.init({
     name: {
       type: DataTypes.STRING,
-      allowNull: false
+      allowNull: false,
+      unique: true
     },
     bio: {
       type: DataTypes.STRING
