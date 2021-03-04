@@ -76,7 +76,7 @@ const getFiles = async (id, t) => {
 const getAlbum = async (id, t) => {
   try {
     //Get album
-    const album = await db.query(`SELECT al.id, al.title, ar.name AS artist,  al.cid, al.tags FROM albums AS al JOIN artists AS ar ON ar.id = al."artistId" WHERE al.id = ${id}`, { type: Sequelize.QueryTypes.SELECT, transaction: t });
+    const album = await db.query(`SELECT al.id, al.title, ar.name AS artist,  al.cid, al.tags, al.description FROM albums AS al JOIN artists AS ar ON ar.id = al."artistId" WHERE al.id = ${id}`, { type: Sequelize.QueryTypes.SELECT, transaction: t });
     //Get songs
     album[0].songs = [];
     const songs = await db.query(`SELECT id FROM songs WHERE "albumId" = '${id}'`, { type: Sequelize.QueryTypes.SELECT, transaction: t });
@@ -100,7 +100,7 @@ const addAlbum = async (payload, t) => {
   //Convert tags into a string for postgres
   let stringifiedTags = stringifyTags(payload.album.tags);
 
-  let album = await db.query(`INSERT INTO albums (title, cid, tags, "artistId", "createdAt", "updatedAt") VALUES ('${payload.album.title}', '${payload.album.cid}', ARRAY [${stringifiedTags}], 1, NOW(), NOW()) RETURNING id`, { type: Sequelize.QueryTypes.INSERT, transaction: t });
+  let album = await db.query(`INSERT INTO albums (title, cid, tags, description, "artistId", "createdAt", "updatedAt") VALUES ('${payload.album.title}', '${payload.album.cid}', ARRAY [${stringifiedTags}], ${payload.album.description}, 1, NOW(), NOW()) RETURNING id`, { type: Sequelize.QueryTypes.INSERT, transaction: t });
   let albumId = album[0][0].id;
 
   //Add songs
