@@ -214,7 +214,7 @@ const getArtist = async (req, res) => {
     artist[0].songs = [];
 
     //Get album
-    const albums = await db.query(`SELECT id FROM albums WHERE "artistId" = '${artist[0].id}'`, { type: Sequelize.QueryTypes.SELECT, transaction: t })
+    const albums = await db.query(`SELECT id FROM albums WHERE "artistId" = '${artist[0].id}' ORDER BY id DESC`, { type: Sequelize.QueryTypes.SELECT, transaction: t })
 
     for (let _album of albums) {
       let album = await getAlbum(_album.id, t);
@@ -222,7 +222,7 @@ const getArtist = async (req, res) => {
     }
 
     //Get songs
-    const songs = await db.query(`SELECT id FROM songs WHERE "artistId" = '${artist[0].id}' AND "albumId" IS NULL`, { type: Sequelize.QueryTypes.SELECT, transaction: t });
+    const songs = await db.query(`SELECT id FROM songs WHERE "artistId" = '${artist[0].id}' AND "albumId" IS NULL ORDER BY id DESC`, { type: Sequelize.QueryTypes.SELECT, transaction: t });
 
     for (let _song of songs) {
       let song = await getSong(_song.id, t);
