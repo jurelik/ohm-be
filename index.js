@@ -24,6 +24,10 @@ app.post('/api/upload', express.json(), (req, res) => {
   helpers.postUpload(req, res);
 });
 
+app.post('/api/comment', express.json(), (req, res) => {
+  helpers.postComment(req, res);
+});
+
 app.listen(process.env.PORT, () => {
   console.log('Server is listening on port ' + process.env.PORT + '.');
 });

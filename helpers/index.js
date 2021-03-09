@@ -41,7 +41,7 @@ const getSong = async (id, t) => {
     //Get data
     const song = await db.query(`SELECT s.id, s.title, a.name AS artist, s."fileType", s.cid, s.tags FROM songs AS s JOIN artists AS a ON a.id = s."artistId" WHERE s.id = ${id}`, { type: Sequelize.QueryTypes.SELECT, transaction: t });
     const files = await getFiles(id, t);
-    const comments = await db.query(`SELECT c.id, c.content, a.name AS artist FROM comments AS c JOIN artists AS a ON a.id = c."artistId" WHERE "songId" = ${id}`, { type: Sequelize.QueryTypes.SELECT, transaction: t });
+    const comments = await db.query(`SELECT c.id, c.content, a.name AS artist FROM comments AS c JOIN artists AS a ON a.id = c."artistId" WHERE "songId" = ${id} ORDER BY id DESC`, { type: Sequelize.QueryTypes.SELECT, transaction: t });
 
     //Append additional data to song
     song[0].type = 'song';
@@ -144,6 +144,15 @@ const addFile = async (file, songId, t) => {
       await db.query(`INSERT INTO files (type, "songId", "artistId", "fileId", "createdAt", "updatedAt") VALUES ('internal', ${songId}, ${original[0].artistId}, ${file.id}, NOW(), NOW())`, { type: Sequelize.QueryTypes.INSERT, transaction: t });
     }
     else await db.query(`INSERT INTO files (name, type, "fileType", cid, tags, info, "songId", "artistId", "createdAt", "updatedAt") VALUES ('${file.name}', '${file.type}', '${file.fileType}', '${file.cid}', ARRAY [${stringifiedTags}], ${file.info ? `'${file.info}'` : 'NULL'}, ${songId}, 1, NOW(), NOW())`, { type: Sequelize.QueryTypes.INSERT, transaction: t });
+  }
+  catch (err) {
+    throw err;
+  }
+}
+
+const addComment = async (payload, t) => {
+  try {
+    await db.query(`INSERT INTO comments (content, "artistId", "songId", "createdAt", "updatedAt") VALUES ('${payload.content}', 1, ${payload.songId}, NOW(), NOW())`, { type: Sequelize.QueryTypes.INSERT, transaction: t });
   }
   catch (err) {
     throw err;
@@ -281,9 +290,41 @@ const postUpload = async (req, res) => {
   }
 }
 
+const postComment = async (req, res) => {
+  if (Object.keys(req.body).length === 0) {
+    return res.json({
+      type: 'error',
+      err: 'No payload included in request'
+    });
+  }
+
+  const payload = req.body;
+  const t = await db.transaction();
+
+  try {
+    if (!payload.songId || !payload.content) throw new Error('Payload is missing data');
+
+    await addComment(payload, t);
+
+    await t.commit();
+    return res.json({
+      type: 'success'
+    });
+  }
+  catch (err) {
+    await t.rollback();
+    console.error(err);
+    return res.json({
+      type: 'error',
+      err
+    });
+  }
+}
+
 module.exports = {
   initDB,
   getLatest,
   getArtist,
-  postUpload
+  postUpload,
+  postComment
 }
