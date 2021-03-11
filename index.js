@@ -28,6 +28,10 @@ app.post('/api/comment', express.json(), (req, res) => {
   helpers.postComment(req, res);
 });
 
+app.post('/api/pinned', express.json(), (req, res) => {
+  helpers.postPinned(req, res);
+});
+
 app.listen(process.env.PORT, () => {
   console.log('Server is listening on port ' + process.env.PORT + '.');
 });

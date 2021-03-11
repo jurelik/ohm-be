@@ -55,6 +55,31 @@ const getSong = async (id, t) => {
   }
 }
 
+const getSongsByCID = async (cids, t) => {
+  try {
+    //Parse array into string
+    let parsed = stringifyWhereIn(cids);
+
+    //Get data
+    const songs = await db.query(`SELECT s.id, s.title, a.name AS artist, s."fileType", s.cid, s.tags FROM songs AS s JOIN artists AS a ON a.id = s."artistId" WHERE s.cid IN ${parsed}`, { type: Sequelize.QueryTypes.SELECT, transaction: t });
+
+    for (let song of songs) {
+      const files = await getFiles(song.id, t);
+      const comments = await db.query(`SELECT c.id, c.content, a.name AS artist FROM comments AS c JOIN artists AS a ON a.id = c."artistId" WHERE "songId" = ${song.id} ORDER BY id DESC`, { type: Sequelize.QueryTypes.SELECT, transaction: t });
+
+      //Append additional data to song
+      song.type = 'song';
+      song.files = files;
+      song.comments = comments;
+    }
+
+    return songs;
+  }
+  catch (err) {
+    throw err.message;
+  }
+}
+
 const getFiles = async (id, t) => {
   try {
     const files = await db.query(`SELECT id, type, "fileId" FROM files WHERE "songId" = ${id}`, { type: Sequelize.QueryTypes.SELECT, transaction: t });
@@ -91,6 +116,35 @@ const getAlbum = async (id, t) => {
     album[0].type = 'album';
 
     return album[0];
+  }
+  catch (err) {
+    throw err.message;
+  }
+}
+
+const getAlbumsByCID = async (cids, t) => {
+  try {
+    //Parse array into string
+    let parsed = stringifyWhereIn(cids);
+
+    //Get album
+    const albums = await db.query(`SELECT al.id, al.title, ar.name AS artist,  al.cid, al.tags, al.description FROM albums AS al JOIN artists AS ar ON ar.id = al."artistId" WHERE al.cid IN ${parsed}`, { type: Sequelize.QueryTypes.SELECT, transaction: t });
+
+    //Get songs
+    for (let album of albums) {
+      album.songs = [];
+      const songs = await db.query(`SELECT id FROM songs WHERE "albumId" = '${album.id}'`, { type: Sequelize.QueryTypes.SELECT, transaction: t });
+
+      for (let _song of songs) {
+        let song = await getSong(_song.id, t);
+        album.songs.push(song);
+      }
+
+      //Append additional data to album
+      album.type = 'album';
+    }
+
+    return albums;
   }
   catch (err) {
     throw err.message;
@@ -166,6 +220,16 @@ const stringifyTags = (tags) => {
   stringified = stringified.slice(0, -2);
 
   return stringified;
+}
+
+const stringifyWhereIn = (array) => {
+  //Parse array into string
+  let parsed = "(";
+  for (let el of array) parsed += `'${el}', `;
+  parsed = parsed.slice(0, -2);
+  parsed += ")";
+
+  return parsed;
 }
 
 //Route handlers
@@ -321,10 +385,47 @@ const postComment = async (req, res) => {
   }
 }
 
+const postPinned = async (req, res) => {
+  if (Object.keys(req.body).length === 0) {
+    return res.json({
+      type: 'error',
+      err: 'No payload included in request'
+    });
+  }
+
+  const payload = req.body;
+  const t = await db.transaction();
+
+  try {
+    if (payload.length === 0) throw new Error('Payload is missing data');
+
+    const albums = await getAlbumsByCID(payload.albums, t);
+    const songs = await getSongsByCID(payload.songs, t);
+
+    await t.commit();
+    return res.json({
+      type: 'success',
+      payload: {
+        albums,
+        songs
+      }
+    });
+  }
+  catch (err) {
+    await t.rollback();
+    console.error(err);
+    return res.json({
+      type: 'error',
+      err
+    });
+  }
+}
+
 module.exports = {
   initDB,
   getLatest,
   getArtist,
   postUpload,
-  postComment
+  postComment,
+  postPinned
 }
