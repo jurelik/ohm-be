@@ -59,6 +59,7 @@ const getSongsByCID = async (cids, t) => {
   try {
     //Parse array into string
     let parsed = stringifyWhereIn(cids);
+    if (!parsed) return [];
 
     //Get data
     const songs = await db.query(`SELECT s.id, s.title, a.name AS artist, s."fileType", s.cid, s.tags FROM songs AS s JOIN artists AS a ON a.id = s."artistId" WHERE s.cid IN ${parsed}`, { type: Sequelize.QueryTypes.SELECT, transaction: t });
@@ -126,6 +127,7 @@ const getAlbumsByCID = async (cids, t) => {
   try {
     //Parse array into string
     let parsed = stringifyWhereIn(cids);
+    if (!parsed) return [];
 
     //Get album
     const albums = await db.query(`SELECT al.id, al.title, ar.name AS artist,  al.cid, al.tags, al.description FROM albums AS al JOIN artists AS ar ON ar.id = al."artistId" WHERE al.cid IN ${parsed}`, { type: Sequelize.QueryTypes.SELECT, transaction: t });
@@ -223,6 +225,8 @@ const stringifyTags = (tags) => {
 }
 
 const stringifyWhereIn = (array) => {
+  if (array.length === 0) return false;
+
   //Parse array into string
   let parsed = "(";
   for (let el of array) parsed += `'${el}', `;
