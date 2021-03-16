@@ -1,6 +1,8 @@
 const { Sequelize } = require('sequelize');
 const db = require('../db');
 const models = require('../models');
+const createClient = require('ipfs-http-client');
+const ipfs = createClient();
 
 const initDB = () => {
   models.sequelize.sync().then(async () => {
@@ -91,7 +93,6 @@ const getFiles = async (id, t) => {
 
       a.push(file[0]);
     }
-    console.log(a)
 
     return a;
   }
@@ -342,6 +343,10 @@ const postUpload = async (req, res) => {
       const songId = await addSong(payload.songs[0], null, t); //Add song
       await db.query(`INSERT INTO submissions (type, "artistId", "songId",  "createdAt", "updatedAt") VALUES ('album', 1, ${songId}, NOW(), NOW())`, { type: Sequelize.QueryTypes.INSERT, transaction: t }); //Add submission
     }
+
+    await ipfs.pin.add(`/ipfs/${payload.album ? payload.album.cid : payload.songs[0].cid}`);
+    const stats = await ipfs.files.stat(`/ipfs/${payload.album ? payload.album.cid : payload.songs[0].cid}`, { withLocal: true });
+    console.log(stats)
 
     await t.commit();
     return res.json({
