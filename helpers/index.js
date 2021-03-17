@@ -335,6 +335,8 @@ const postUpload = async (req, res) => {
   const t = await db.transaction();
 
   try {
+    await ipfs.swarm.connect(payload.multiaddr); //Try to init connection to node
+
     if (payload.album) {
       const albumId = await addAlbum(payload, t); //Add album
       await db.query(`INSERT INTO submissions (type, "artistId", "albumId",  "createdAt", "updatedAt") VALUES ('album', 1, ${albumId}, NOW(), NOW())`, { type: Sequelize.QueryTypes.INSERT, transaction: t }); //Add submission
@@ -345,8 +347,6 @@ const postUpload = async (req, res) => {
     }
 
     await ipfs.pin.add(`/ipfs/${payload.album ? payload.album.cid : payload.songs[0].cid}`);
-    const stats = await ipfs.files.stat(`/ipfs/${payload.album ? payload.album.cid : payload.songs[0].cid}`, { withLocal: true });
-    console.log(stats)
 
     await t.commit();
     return res.json({
