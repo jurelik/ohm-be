@@ -64,7 +64,7 @@ const getSongsByCID = async (cids, t) => {
     if (!parsed) return [];
 
     //Get data
-    const songs = await db.query(`SELECT s.id, s.title, a.name AS artist, s."fileType", s.cid, s.tags FROM songs AS s JOIN artists AS a ON a.id = s."artistId" WHERE s.cid IN ${parsed}`, { type: Sequelize.QueryTypes.SELECT, transaction: t });
+    const songs = await db.query(`SELECT s.id, s.title, a.name AS artist, s."fileType", s.cid, s.tags FROM songs AS s JOIN artists AS a ON a.id = s."artistId" WHERE s.cid IN (${parsed})`, { type: Sequelize.QueryTypes.SELECT, transaction: t });
 
     for (let song of songs) {
       const files = await getFiles(song.id, t);
@@ -131,7 +131,7 @@ const getAlbumsByCID = async (cids, t) => {
     if (!parsed) return [];
 
     //Get album
-    const albums = await db.query(`SELECT al.id, al.title, ar.name AS artist,  al.cid, al.tags, al.description FROM albums AS al JOIN artists AS ar ON ar.id = al."artistId" WHERE al.cid IN ${parsed}`, { type: Sequelize.QueryTypes.SELECT, transaction: t });
+    const albums = await db.query(`SELECT al.id, al.title, ar.name AS artist,  al.cid, al.tags, al.description FROM albums AS al JOIN artists AS ar ON ar.id = al."artistId" WHERE al.cid IN (${parsed})`, { type: Sequelize.QueryTypes.SELECT, transaction: t });
 
     //Get songs
     for (let album of albums) {
@@ -172,7 +172,7 @@ const addAlbum = async (payload, t) => {
 const addSong = async (_song, albumId, t) => {
   try {
     //Convert tags into a string for postgres
-    let stringifiedTags = stringifyTags(_song.tags);
+    const stringifiedTags = stringifyTags(_song.tags);
     let song;
 
     if (albumId) song = await db.query(`INSERT INTO songs (title, "fileType", cid, tags, "albumId", "artistId", "createdAt", "updatedAt") VALUES ('${_song.title}', '${_song.fileType}', '${_song.cid}', ARRAY [${stringifiedTags}], ${albumId}, 1, NOW(), NOW()) RETURNING id`, { type: Sequelize.QueryTypes.INSERT, transaction: t });
@@ -216,25 +216,22 @@ const addComment = async (payload, t) => {
   }
 }
 
+//Convert tags into a string for postgres
 const stringifyTags = (tags) => {
-  //Convert tags into a string for postgres
-  let stringified = "";
-  for (let tag of tags) stringified += `'${tag.trim()}', `;
-  stringified = stringified.slice(0, -2);
-
-  return stringified;
+  return tags.split(/[,;]+/).map(tag => {
+    tag.trim();
+    return `'${tag}'`;
+  }).join(", ");
 }
 
+//Parse array into string
 const stringifyWhereIn = (array) => {
   if (array.length === 0) return false;
 
-  //Parse array into string
-  let parsed = "(";
-  for (let el of array) parsed += `'${el}', `;
-  parsed = parsed.slice(0, -2);
-  parsed += ")";
-
-  return parsed;
+  return array.map(item => {
+    item.trim();
+    return `'${item}'`;
+  }).join(', ');
 }
 
 //Route handlers
@@ -335,7 +332,7 @@ const postUpload = async (req, res) => {
   const t = await db.transaction();
 
   try {
-    await ipfs.swarm.connect(payload.multiaddr); //Try to init connection to node
+    process.env.NODE_ENV === 'production' ? await ipfs.swarm.connect(payload.multiaddr) : null; //Try to init connection to node
 
     if (payload.album) {
       const albumId = await addAlbum(payload, t); //Add album
