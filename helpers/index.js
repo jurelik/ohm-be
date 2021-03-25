@@ -41,7 +41,7 @@ const initDB = () => {
 const getSong = async (id, t) => {
   try {
     //Get data
-    const song = await db.query(`SELECT s.id, s.title, a.name AS artist, s."fileType", s.cid, s.tags FROM songs AS s JOIN artists AS a ON a.id = s."artistId" WHERE s.id = ${id}`, { type: Sequelize.QueryTypes.SELECT, transaction: t });
+    const song = await db.query(`SELECT s.id, s.title, a.name AS artist, s.format, s.cid, s.tags FROM songs AS s JOIN artists AS a ON a.id = s."artistId" WHERE s.id = ${id}`, { type: Sequelize.QueryTypes.SELECT, transaction: t });
     const files = await getFiles(id, t);
     const comments = await db.query(`SELECT c.id, c.content, a.name AS artist FROM comments AS c JOIN artists AS a ON a.id = c."artistId" WHERE "songId" = ${id} ORDER BY id DESC`, { type: Sequelize.QueryTypes.SELECT, transaction: t });
 
@@ -64,7 +64,7 @@ const getSongsByCID = async (cids, t) => {
     if (!parsed) return [];
 
     //Get data
-    const songs = await db.query(`SELECT s.id, s.title, a.name AS artist, s."fileType", s.cid, s.tags FROM songs AS s JOIN artists AS a ON a.id = s."artistId" WHERE s.cid IN (${parsed})`, { type: Sequelize.QueryTypes.SELECT, transaction: t });
+    const songs = await db.query(`SELECT s.id, s.title, a.name AS artist, s.format, s.cid, s.tags FROM songs AS s JOIN artists AS a ON a.id = s."artistId" WHERE s.cid IN (${parsed})`, { type: Sequelize.QueryTypes.SELECT, transaction: t });
 
     for (let song of songs) {
       const files = await getFiles(song.id, t);
@@ -89,7 +89,7 @@ const getFiles = async (id, t) => {
     const a = [];
 
     for (let _file of files) {
-      const file = await db.query(`SELECT f.id, f.name, a.name AS artist, '${_file.type}' AS type, f."fileType", f.cid, f.tags, f.info FROM files AS f JOIN artists AS a ON a.id = f."artistId" WHERE f.id = ${_file.type === 'internal' ? _file.fileId : _file.id}`, { type: Sequelize.QueryTypes.SELECT, transaction: t });
+      const file = await db.query(`SELECT f.id, f.name, a.name AS artist, '${_file.type}' AS type, f.format, f.cid, f.tags, f.info FROM files AS f JOIN artists AS a ON a.id = f."artistId" WHERE f.id = ${_file.type === 'internal' ? _file.fileId : _file.id}`, { type: Sequelize.QueryTypes.SELECT, transaction: t });
 
       a.push(file[0]);
     }
@@ -175,8 +175,8 @@ const addSong = async (_song, albumId, t) => {
     const stringifiedTags = stringifyTags(_song.tags);
     let song;
 
-    if (albumId) song = await db.query(`INSERT INTO songs (title, "fileType", cid, tags, "albumId", "artistId", "createdAt", "updatedAt") VALUES ('${_song.title}', '${_song.fileType}', '${_song.cid}', ARRAY [${stringifiedTags}], ${albumId}, 1, NOW(), NOW()) RETURNING id`, { type: Sequelize.QueryTypes.INSERT, transaction: t });
-    else song = await db.query(`INSERT INTO songs (title, "fileType", cid, tags, "artistId", "createdAt", "updatedAt") VALUES ('${_song.title}', '${_song.fileType}', '${_song.cid}', ARRAY [${stringifiedTags}], 1, NOW(), NOW()) RETURNING id`, { type: Sequelize.QueryTypes.INSERT, transaction: t });
+    if (albumId) song = await db.query(`INSERT INTO songs (title, format, cid, tags, "albumId", "artistId", "createdAt", "updatedAt") VALUES ('${_song.title}', '${_song.format}', '${_song.cid}', ARRAY [${stringifiedTags}], ${albumId}, 1, NOW(), NOW()) RETURNING id`, { type: Sequelize.QueryTypes.INSERT, transaction: t });
+    else song = await db.query(`INSERT INTO songs (title, format, cid, tags, "artistId", "createdAt", "updatedAt") VALUES ('${_song.title}', '${_song.format}', '${_song.cid}', ARRAY [${stringifiedTags}], 1, NOW(), NOW()) RETURNING id`, { type: Sequelize.QueryTypes.INSERT, transaction: t });
     let songId = song[0][0].id;
 
     //Add files
@@ -200,7 +200,7 @@ const addFile = async (file, songId, t) => {
       const original = await db.query(`SELECT a.id AS "artistId" FROM files AS f JOIN artists AS a ON a.id = f."artistId" WHERE f.id = ${file.id}`, { type: Sequelize.QueryTypes.SELECT, transaction: t });
       await db.query(`INSERT INTO files (type, "songId", "artistId", "fileId", "createdAt", "updatedAt") VALUES ('internal', ${songId}, ${original[0].artistId}, ${file.id}, NOW(), NOW())`, { type: Sequelize.QueryTypes.INSERT, transaction: t });
     }
-    else await db.query(`INSERT INTO files (name, type, "fileType", cid, tags, info, "songId", "artistId", "createdAt", "updatedAt") VALUES ('${file.name}', '${file.type}', '${file.fileType}', '${file.cid}', ARRAY [${stringifiedTags}], ${file.info ? `'${file.info}'` : 'NULL'}, ${songId}, 1, NOW(), NOW())`, { type: Sequelize.QueryTypes.INSERT, transaction: t });
+    else await db.query(`INSERT INTO files (name, type, format, cid, tags, info, "songId", "artistId", "createdAt", "updatedAt") VALUES ('${file.name}', '${file.type}', '${file.format}', '${file.cid}', ARRAY [${stringifiedTags}], ${file.info ? `'${file.info}'` : 'NULL'}, ${songId}, 1, NOW(), NOW())`, { type: Sequelize.QueryTypes.INSERT, transaction: t });
   }
   catch (err) {
     throw err;

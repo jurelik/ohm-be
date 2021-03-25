@@ -30,7 +30,7 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: false,
       isIn: [['original', 'internal', 'external']]
     },
-    fileType: {
+    format: {
       type: DataTypes.STRING,
       isIn: [['wav', 'mp3']],
       validate: {
