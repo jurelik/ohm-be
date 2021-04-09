@@ -3,10 +3,23 @@ const express = require('express');
 const app = express();;
 const cors = require('cors');
 const helpers = require('./helpers');
+const session = require('express-session');
+const SessionStore = require('./sessionStore')(session.Store);
+const db = require('./db');
 
 //helpers.initDB(); //Uncomment only when initialising db locally
 
 app.use(cors());
+app.use(session({
+  secret: 'test', //Change this in production
+  resave: true,
+  saveUninitialized: true,
+  store: new SessionStore(db),
+  cookie: {
+    secure: false, //Change this in production
+    maxAge: 1000 * 60 * 60 //Change this in production
+  }
+}))
 
 app.get('/', (req, res) => {
   res.end('Hello world');

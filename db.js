@@ -2,6 +2,7 @@ const { Sequelize } = require('sequelize');
 
 //This command makes COUNT return integers instead of strings
 require('pg').defaults.parseInt8 = true;
+console.log('hi')
 
 const db = new Sequelize(`postgres://${process.env.DB_USER}${process.env.DB_PASSWORD ? `:${process.env.DB_PASSWORD}` : ''}@${process.env.DB_URL}:5432/${process.env.DB_NAME}`)
 
