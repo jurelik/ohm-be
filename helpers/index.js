@@ -235,6 +235,50 @@ const stringifyWhereIn = (array) => {
 }
 
 //Route handlers
+const postLogin = async (req, res) => {
+  if (!req.body || Object.keys(req.body).length === 0) {
+    return res.json({
+      type: 'error',
+      err: 'No payload included in request'
+    });
+  }
+
+  const payload = req.body;
+  const t = await db.transaction();
+
+  try {
+    if (req.session.authenticated) {
+      await t.commit();
+      return res.json({
+        type: 'success',
+        session: req.session
+      });
+    }
+
+    if (payload.artist) {
+      const artist = await db.query(`SELECT name, id FROM artists WHERE name = '${payload.artist}'`, { type: Sequelize.QueryTypes.SELECT, transaction: t });
+      if (artist.length === 0) throw new Error('Artist not found.');
+
+      req.session.authenticated = true; //Append to session and include cookie in response
+
+      await t.commit();
+      return res.json({
+        type: 'success',
+        session: req.session
+      });
+    }
+    else throw new Error('Artist not included in payload');
+  }
+  catch (err) {
+    await t.rollback();
+    console.error(err);
+    return res.json({
+      type: 'error',
+      err
+    });
+  }
+}
+
 const getLatest = async (req, res) => {
   const t = await db.transaction();
 
@@ -429,6 +473,7 @@ const postPinned = async (req, res) => {
 
 module.exports = {
   initDB,
+  postLogin,
   getLatest,
   getArtist,
   postUpload,

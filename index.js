@@ -13,7 +13,7 @@ app.use(cors());
 app.use(session({
   secret: 'test', //Change this in production
   resave: true,
-  saveUninitialized: true,
+  saveUninitialized: false,
   store: new SessionStore({}, db),
   cookie: {
     secure: false, //Change this in production
@@ -22,9 +22,12 @@ app.use(session({
 }))
 
 app.get('/', (req, res) => {
-  console.log(req.session)
   res.end('Hello world');
 });
+
+app.post('/api/login', express.json(), (req, res) => {
+  helpers.postLogin(req, res);
+})
 
 app.get('/api/latest', (req, res) => {
   helpers.getLatest(req, res);
