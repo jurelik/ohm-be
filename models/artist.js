@@ -33,6 +33,14 @@ module.exports = (sequelize, DataTypes) => {
     },
     location: {
       type: DataTypes.STRING
+    },
+    pw: {
+      type: DataTypes.STRING,
+      allowNull: false
+    },
+    salt: {
+      type: DataTypes.STRING,
+      allowNull: false
     }
   }, {
     sequelize,

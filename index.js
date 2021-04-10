@@ -11,6 +11,7 @@ const db = require('./db');
 
 app.use(cors());
 app.use(session({
+  name: 'ohm_cookie',
   secret: 'test', //Change this in production
   resave: true,
   saveUninitialized: false,

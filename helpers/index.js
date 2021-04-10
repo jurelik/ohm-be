@@ -1,4 +1,5 @@
 const { Sequelize } = require('sequelize');
+const crypto = require('crypto');
 const db = require('../db');
 const models = require('../models');
 const createClient = require('ipfs-http-client');
@@ -9,7 +10,8 @@ const initDB = () => {
     const t = await db.transaction();
 
     try {
-      await db.query(`INSERT INTO artists (name, bio, location,  "createdAt", "updatedAt") VALUES ('antik', 'hello world', 'earth', NOW(), NOW())`, { type: Sequelize.QueryTypes.INSERT, transaction: t });
+      const { hash, salt } = await generateHash('test');
+      await db.query(`INSERT INTO artists (name, bio, location, pw, salt, "createdAt", "updatedAt") VALUES ('antik', 'hello world', 'earth','${hash}', '${salt}', NOW(), NOW())`, { type: Sequelize.QueryTypes.INSERT, transaction: t });
       ////Song
       //await db.query(`INSERT INTO songs (title, "fileType", cid, tags, "artistId", "createdAt", "updatedAt") VALUES ('comp357', 'mp3', 'QmU1B9JdMvhm4EB8kj487GfwQzfVtocKCm9XNAHkUtHz4f', ARRAY ['lofi', 'hiphop'], 1, NOW(), NOW())`, { type: Sequelize.QueryTypes.INSERT, transaction: t });
       //await db.query(`INSERT INTO submissions (type, "artistId", "songId",  "createdAt", "updatedAt") VALUES ('song', 1, 1, NOW(), NOW())`, { type: Sequelize.QueryTypes.INSERT, transaction: t });
@@ -234,6 +236,19 @@ const stringifyWhereIn = (array) => {
   }).join(', ');
 }
 
+const generateHash = (pw, salt) => {
+  return new Promise((resolve, reject) => {
+    const _salt = salt || crypto.randomBytes(24).toString('base64');
+
+    crypto.pbkdf2(pw, _salt, 100000, 64, 'sha512', (err, derivedKey) => {
+      if (err) reject(err);
+
+      const hash = derivedKey.toString('base64');
+      resolve({ hash, salt: _salt });
+    });
+  });
+}
+
 //Route handlers
 const postLogin = async (req, res) => {
   if (!req.body || Object.keys(req.body).length === 0) {
@@ -255,9 +270,12 @@ const postLogin = async (req, res) => {
       });
     }
 
-    if (payload.artist) {
-      const artist = await db.query(`SELECT name, id FROM artists WHERE name = '${payload.artist}'`, { type: Sequelize.QueryTypes.SELECT, transaction: t });
+    if (payload.artist && payload.pw) {
+      const artist = await db.query(`SELECT id, pw, salt FROM artists WHERE name = '${payload.artist}'`, { type: Sequelize.QueryTypes.SELECT, transaction: t });
       if (artist.length === 0) throw new Error('Artist not found.');
+
+      const { hash } = await generateHash(payload.pw, artist[0].salt) //Check password
+      if (hash !== artist[0].pw) throw new Error('Wrong password.');
 
       req.session.authenticated = true; //Append to session and include cookie in response
 
@@ -267,14 +285,13 @@ const postLogin = async (req, res) => {
         session: req.session
       });
     }
-    else throw new Error('Artist not included in payload');
+    else throw new Error('Artist or password not included in payload');
   }
   catch (err) {
     await t.rollback();
-    console.error(err);
     return res.json({
       type: 'error',
-      err
+      err: err.message
     });
   }
 }
