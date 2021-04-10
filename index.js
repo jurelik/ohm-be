@@ -14,7 +14,7 @@ app.use(session({
   secret: 'test', //Change this in production
   resave: true,
   saveUninitialized: true,
-  store: new SessionStore(db),
+  store: new SessionStore({}, db),
   cookie: {
     secure: false, //Change this in production
     maxAge: 1000 * 60 * 60 //Change this in production
@@ -22,6 +22,7 @@ app.use(session({
 }))
 
 app.get('/', (req, res) => {
+  console.log(req.session)
   res.end('Hello world');
 });
 
