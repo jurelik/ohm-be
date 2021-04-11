@@ -249,9 +249,27 @@ const generateHash = (pw, salt) => {
   });
 }
 
+const userAuthenticated = (req, res) => {
+  if (!req.session.authenticated) {
+    res.json({
+      type: 'error',
+      err: 'User not authenticated'
+    });
+    return false;
+  }
+  return true;
+}
+
 //Route handlers
 const postLogin = async (req, res) => {
-  if (!req.body || Object.keys(req.body).length === 0) {
+  if (req.session.authenticated) { //Check if session is already established
+    return res.json({
+      type: 'success',
+      session: req.session
+    });
+  }
+
+  if (!req.body || Object.keys(req.body).length === 0) { //If no session is established, req.body is required
     return res.json({
       type: 'error',
       err: 'No payload included in request'
@@ -262,14 +280,6 @@ const postLogin = async (req, res) => {
   const t = await db.transaction();
 
   try {
-    if (req.session.authenticated) {
-      await t.commit();
-      return res.json({
-        type: 'success',
-        session: req.session
-      });
-    }
-
     if (payload.artist && payload.pw) {
       const artist = await db.query(`SELECT id, pw, salt FROM artists WHERE name = '${payload.artist}'`, { type: Sequelize.QueryTypes.SELECT, transaction: t });
       if (artist.length === 0) throw new Error('Artist not found.');
@@ -490,6 +500,7 @@ const postPinned = async (req, res) => {
 
 module.exports = {
   initDB,
+  userAuthenticated,
   postLogin,
   getLatest,
   getArtist,

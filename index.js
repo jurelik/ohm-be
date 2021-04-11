@@ -28,25 +28,30 @@ app.get('/', (req, res) => {
 
 app.post('/api/login', express.json(), (req, res) => {
   helpers.postLogin(req, res);
-})
+});
 
 app.get('/api/latest', (req, res) => {
+  if (!helpers.userAuthenticated(req, res)) return;
   helpers.getLatest(req, res);
 });
 
 app.get('/api/artist/:name', (req, res) => {
+  if (!helpers.userAuthenticated(req, res)) return;
   helpers.getArtist(req, res);
 });
 
 app.post('/api/upload', express.json(), (req, res) => {
+  if (!helpers.userAuthenticated(req, res)) return;
   helpers.postUpload(req, res);
 });
 
 app.post('/api/comment', express.json(), (req, res) => {
+  if (!helpers.userAuthenticated(req, res)) return;
   helpers.postComment(req, res);
 });
 
 app.post('/api/pinned', express.json(), (req, res) => {
+  if (!helpers.userAuthenticated(req, res)) return;
   helpers.postPinned(req, res);
 });
 
