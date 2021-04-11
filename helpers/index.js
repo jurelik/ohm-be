@@ -11,7 +11,8 @@ const initDB = () => {
 
     try {
       const { hash, salt } = await generateHash('test');
-      await db.query(`INSERT INTO artists (name, bio, location, pw, salt, "createdAt", "updatedAt") VALUES ('antik', 'hello world', 'earth','${hash}', '${salt}', NOW(), NOW())`, { type: Sequelize.QueryTypes.INSERT, transaction: t });
+      await db.query(`INSERT INTO artists (name, bio, location, pw, salt, "createdAt", "updatedAt") VALUES ('test1', 'hello world', 'earth','${hash}', '${salt}', NOW(), NOW())`, { type: Sequelize.QueryTypes.INSERT, transaction: t });
+      await db.query(`INSERT INTO artists (name, bio, location, pw, salt, "createdAt", "updatedAt") VALUES ('test2', 'hello world', 'earth','${hash}', '${salt}', NOW(), NOW())`, { type: Sequelize.QueryTypes.INSERT, transaction: t });
       ////Song
       //await db.query(`INSERT INTO songs (title, "fileType", cid, tags, "artistId", "createdAt", "updatedAt") VALUES ('comp357', 'mp3', 'QmU1B9JdMvhm4EB8kj487GfwQzfVtocKCm9XNAHkUtHz4f', ARRAY ['lofi', 'hiphop'], 1, NOW(), NOW())`, { type: Sequelize.QueryTypes.INSERT, transaction: t });
       //await db.query(`INSERT INTO submissions (type, "artistId", "songId",  "createdAt", "updatedAt") VALUES ('song', 1, 1, NOW(), NOW())`, { type: Sequelize.QueryTypes.INSERT, transaction: t });
@@ -211,7 +212,7 @@ const addFile = async (data, t) => {
 
 const addComment = async (payload, t) => {
   try {
-    await db.query(`INSERT INTO comments (content, "artistId", "songId", "createdAt", "updatedAt") VALUES ('${payload.content}', 1, ${payload.songId}, NOW(), NOW())`, { type: Sequelize.QueryTypes.INSERT, transaction: t });
+    await db.query(`INSERT INTO comments (content, "artistId", "songId", "createdAt", "updatedAt") VALUES ('${payload.content}', ${payload.artistId}, ${payload.songId}, NOW(), NOW())`, { type: Sequelize.QueryTypes.INSERT, transaction: t });
   }
   catch (err) {
     throw err;
@@ -260,8 +261,15 @@ const userAuthenticated = (req, res) => {
   return true;
 }
 
+const initialisePayload = (req) => {
+  const payload = req.body;
+  payload.artistId = req.session.artistId || null;
+  return payload;
+}
+
 //Route handlers
 const postLogin = async (req, res) => {
+  console.log('hi')
   if (req.session.authenticated) { //Check if session is already established
     return res.json({
       type: 'success',
@@ -405,9 +413,8 @@ const postUpload = async (req, res) => {
   const t = await db.transaction();
 
   try {
-    const payload = req.body;
-    payload.artistId = req.session.artistId || null;
-    if (!payload.artistId) throw new Error('Session is missing artist data. Try to login again.');
+    const payload = initialisePayload(req); //Initialise payload object
+    if (!payload.artistId) throw new Error('Session is missing artist data. Try to login again.'); //Check for missing data
 
     process.env.NODE_ENV === 'production' ? await ipfs.swarm.connect(payload.multiaddr) : null; //Try to init connection to node
 
@@ -445,11 +452,12 @@ const postComment = async (req, res) => {
     });
   }
 
-  const payload = req.body;
   const t = await db.transaction();
 
   try {
-    if (!payload.songId || !payload.content) throw new Error('Payload is missing data');
+    const payload = initialisePayload(req); //Initialise payload
+    if (!payload.songId || !payload.content) throw new Error('Payload is missing data'); //Check for missing data
+    if (!payload.artistId) throw new Error('Session is missing artist data. Try to login again.'); //Check for missing data
 
     await addComment(payload, t);
 
@@ -476,11 +484,10 @@ const postPinned = async (req, res) => {
     });
   }
 
-  const payload = req.body;
   const t = await db.transaction();
 
   try {
-    if (payload.length === 0) throw new Error('Payload is missing data');
+    const payload = initialisePayload(req); //Initialise payload
 
     const albums = await getAlbumsByCID(payload.albums, t);
     const songs = await getSongsByCID(payload.songs, t);

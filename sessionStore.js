@@ -13,7 +13,7 @@ module.exports = function SessionStoreInit(Store) {
       try {
         const res = await this.db.query(`SELECT data FROM sessions WHERE sid = '${sid}'`, { type: Sequelize.QueryTypes.SELECT, transaction: t });
         await t.commit();
-        if (res.length === 0) return (null, null);
+        if (res.length === 0) return cb();
 
         const session = res[0].data;
         cb(null, session);

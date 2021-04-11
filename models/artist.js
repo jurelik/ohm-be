@@ -20,9 +20,6 @@ module.exports = (sequelize, DataTypes) => {
     }
   };
   artist.init({
-    sid: {
-      type: DataTypes.STRING
-    },
     name: {
       type: DataTypes.STRING,
       allowNull: false,
