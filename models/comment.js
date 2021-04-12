@@ -12,7 +12,7 @@ module.exports = (sequelize, DataTypes) => {
     static associate(models) {
       // define association here
       comment.belongsTo(models.artist);
-      comment.belongsTo(models.song);
+      comment.belongsTo(models.song, { onDelete: 'cascade' });
     }
   };
   comment.init({

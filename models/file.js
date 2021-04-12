@@ -11,9 +11,9 @@ module.exports = (sequelize, DataTypes) => {
      */
     static associate(models) {
       // define association here
-      file.belongsTo(models.song);
-      file.belongsTo(models.artist);
-      file.belongsTo(models.file);
+      file.belongsTo(models.song, { onDelete: 'cascade' });
+      file.belongsTo(models.artist, { onDelete: 'cascade' });
+      file.belongsTo(models.file, { onDelete: 'cascade' });
     }
   };
   file.init({
