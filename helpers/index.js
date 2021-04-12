@@ -336,7 +336,7 @@ const getLatest = async (req, res) => {
 
   try {
     const a = [];
-    const submissions = await db.query(`SELECT "songId", "albumId" FROM submissions ORDER BY "createdAt" DESC LIMIT 5`, { type: Sequelize.QueryTypes.SELECT, transaction: t });
+    const submissions = await db.query(`SELECT "songId", "albumId" FROM submissions WHERE "albumId" IS NOT NULL OR "songId" IS NOT NULL ORDER BY "createdAt" DESC LIMIT 5`, { type: Sequelize.QueryTypes.SELECT, transaction: t });
 
     for (let submission of submissions) {
       if (submission.songId) {
