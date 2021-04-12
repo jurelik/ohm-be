@@ -13,7 +13,7 @@ app.use(cors());
 app.use(session({
   name: 'ohm_cookie',
   secret: 'test', //Change this in production
-  resave: true,
+  resave: false,
   saveUninitialized: false,
   store: new SessionStore({}, db),
   cookie: {

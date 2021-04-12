@@ -43,7 +43,7 @@ module.exports = function SessionStoreInit(Store) {
       const t = await this.db.transaction();
 
       try {
-        await this.db.query(`UPDATE sessions SET "updatedAt" = NOW() WHERE sid = '${sid}'`, { type: Sequelize.QueryTypes.UPDATE, transaction: t });
+        await this.db.query(`UPDATE sessions SET data = '${JSON.stringify(session)}', "updatedAt" = NOW() WHERE sid = '${sid}'`, { type: Sequelize.QueryTypes.UPDATE, transaction: t });
         await t.commit();
 
         return cb(null);
