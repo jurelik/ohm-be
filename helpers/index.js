@@ -219,6 +219,19 @@ const addComment = async (payload, t) => {
   }
 }
 
+const deleteSong = async (payload, t) => {
+  try {
+    if (payload.sessionArtist !== payload.artist) throw new Error('Permission denied.');
+
+    const deleted = await db.query(`DELETE FROM songs WHERE id = ${payload.id} AND "albumId" IS NULL RETURNING id`, { type: Sequelize.QueryTypes.DELETE, transaction: t });
+    console.log(deleted);
+  }
+  catch (err) {
+    throw err;
+  }
+}
+
+
 //Convert tags into a string for postgres
 const stringifyTags = (tags) => {
   return tags.split(/[,;]+/).map(tag => {
@@ -264,6 +277,7 @@ const userAuthenticated = (req, res) => {
 const initialisePayload = (req) => {
   const payload = req.body;
   payload.artistId = req.session.artistId || null;
+  payload.sessionArtist = req.session.artist || null;
   return payload;
 }
 
@@ -511,6 +525,47 @@ const postPinned = async (req, res) => {
   }
 }
 
+const removePin = async (cid) => {
+  try {
+    for await (const pin of ipfs.pin.ls({ type: 'recursive' })) {
+      if(pin.cid.string === cid) await ipfs.pin.rm(pin.cid, { recursive: true }); //Remove pin from IPFS
+    }
+  }
+  catch (err) {
+    return; //Ignore as this means that the file is no longer pinned already
+  }
+}
+
+const postDeleteSong = async (req, res) => {
+  if (Object.keys(req.body).length === 0) {
+    return res.json({
+      type: 'error',
+      err: 'No payload included in request'
+    });
+  }
+
+  const t = await db.transaction();
+
+  try {
+    const payload = initialisePayload(req); //Initialise payload
+    await removePin(payload.cid);
+    await deleteSong(payload, t); //Delete song
+
+    await t.commit();
+    return res.json({
+      type: 'success'
+    });
+  }
+  catch (err) {
+    await t.rollback();
+    console.error(err);
+    return res.json({
+      type: 'error',
+      err
+    });
+  }
+}
+
 module.exports = {
   initDB,
   userAuthenticated,
@@ -519,5 +574,6 @@ module.exports = {
   getArtist,
   postUpload,
   postComment,
-  postPinned
+  postPinned,
+  postDeleteSong
 }
