@@ -61,6 +61,11 @@ app.post('/api/deletesong', express.json(), (req, res) => {
   helpers.postDeleteSong(req, res);
 });
 
+app.post('/api/deletealbum', express.json(), (req, res) => {
+  if (!helpers.userAuthenticated(req, res)) return;
+  helpers.postDeleteAlbum(req, res);
+});
+
 app.listen(process.env.PORT, () => {
   console.log('Server is listening on port ' + process.env.PORT + '.');
 });

@@ -222,15 +222,23 @@ const addComment = async (payload, t) => {
 const deleteSong = async (payload, t) => {
   try {
     if (payload.sessionArtist !== payload.artist) throw new Error('Permission denied.');
-
     const deleted = await db.query(`DELETE FROM songs WHERE id = ${payload.id} AND "albumId" IS NULL RETURNING id`, { type: Sequelize.QueryTypes.DELETE, transaction: t });
-    console.log(deleted);
+    if (deleted.length === 0) throw new Error('Cannot delete this song.');
   }
   catch (err) {
     throw err;
   }
 }
 
+const deleteAlbum = async (payload, t) => {
+  try {
+    if (payload.sessionArtist !== payload.artist) throw new Error('Permission denied.');
+    const deleted = await db.query(`DELETE FROM albums WHERE id = ${payload.id} RETURNING id`, { type: Sequelize.QueryTypes.DELETE, transaction: t });
+  }
+  catch (err) {
+    throw err;
+  }
+}
 
 //Convert tags into a string for postgres
 const stringifyTags = (tags) => {
@@ -560,6 +568,36 @@ const postDeleteSong = async (req, res) => {
     console.error(err);
     return res.json({
       type: 'error',
+      err: err.message
+    });
+  }
+}
+
+const postDeleteAlbum = async (req, res) => {
+  if (Object.keys(req.body).length === 0) {
+    return res.json({
+      type: 'error',
+      err: 'No payload included in request'
+    });
+  }
+
+  const t = await db.transaction();
+
+  try {
+    const payload = initialisePayload(req); //Initialise payload
+    await removePin(payload.cid);
+    await deleteAlbum(payload, t); //Delete album
+
+    await t.commit();
+    return res.json({
+      type: 'success'
+    });
+  }
+  catch (err) {
+    await t.rollback();
+    console.error(err);
+    return res.json({
+      type: 'error',
       err
     });
   }
@@ -574,5 +612,6 @@ module.exports = {
   postUpload,
   postComment,
   postPinned,
-  postDeleteSong
+  postDeleteSong,
+  postDeleteAlbum
 }
