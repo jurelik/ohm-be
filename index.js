@@ -14,6 +14,7 @@ app.use(session({
   name: 'ohm_cookie',
   secret: 'test', //Change this in production
   resave: false,
+  rolling: true,
   saveUninitialized: false,
   store: new SessionStore({}, db),
   cookie: {

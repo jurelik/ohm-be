@@ -283,7 +283,6 @@ const initialisePayload = (req) => {
 
 //Route handlers
 const postLogin = async (req, res) => {
-  console.log('hi')
   if (req.session.authenticated) { //Check if session is already established
     return res.json({
       type: 'success',
