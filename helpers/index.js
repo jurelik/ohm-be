@@ -166,7 +166,7 @@ const addAlbum = async (payload, t) => {
 
   //Add songs
   for (let _song of payload.songs) {
-    await addSong({ song: payload.songs[0], albumId, artistId: payload.artistId }, t); //Add song
+    await addSong({ song: _song, albumId, artistId: payload.artistId }, t); //Add song
   }
 
   return albumId;
