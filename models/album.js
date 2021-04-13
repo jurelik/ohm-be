@@ -11,7 +11,7 @@ module.exports = (sequelize, DataTypes) => {
      */
     static associate(models) {
       // define association here
-      album.hasMany(models.song);
+      album.hasMany(models.song, { onDelete: 'cascade', hooks: true });
       album.hasOne(models.submission);
       album.belongsTo(models.artist);
     }
