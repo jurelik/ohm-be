@@ -56,14 +56,9 @@ app.post('/api/pinned', express.json(), (req, res) => {
   helpers.postPinned(req, res);
 });
 
-app.post('/api/deletesong', express.json(), (req, res) => {
+app.post('/api/delete', express.json(), (req, res) => {
   if (!helpers.userAuthenticated(req, res)) return;
-  helpers.postDeleteSong(req, res);
-});
-
-app.post('/api/deletealbum', express.json(), (req, res) => {
-  if (!helpers.userAuthenticated(req, res)) return;
-  helpers.postDeleteAlbum(req, res);
+  helpers.postDelete(req, res);
 });
 
 app.listen(process.env.PORT, () => {

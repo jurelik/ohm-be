@@ -234,6 +234,7 @@ const deleteAlbum = async (payload, t) => {
   try {
     if (payload.sessionArtist !== payload.artist) throw new Error('Permission denied.');
     const deleted = await db.query(`DELETE FROM albums WHERE id = ${payload.id} RETURNING id`, { type: Sequelize.QueryTypes.DELETE, transaction: t });
+    if (deleted.length === 0) throw new Error('Cannot delete this album.');
   }
   catch (err) {
     throw err;
@@ -543,7 +544,7 @@ const removePin = async (cid) => {
   }
 }
 
-const postDeleteSong = async (req, res) => {
+const postDelete = async (req, res) => {
   if (Object.keys(req.body).length === 0) {
     return res.json({
       type: 'error',
@@ -556,7 +557,7 @@ const postDeleteSong = async (req, res) => {
   try {
     const payload = initialisePayload(req); //Initialise payload
     await removePin(payload.cid);
-    await deleteSong(payload, t); //Delete song
+    payload.type === 'song' ? await deleteSong(payload, t) : await deleteAlbum(payload, t); //Delete song or album
 
     await t.commit();
     return res.json({
@@ -573,36 +574,6 @@ const postDeleteSong = async (req, res) => {
   }
 }
 
-const postDeleteAlbum = async (req, res) => {
-  if (Object.keys(req.body).length === 0) {
-    return res.json({
-      type: 'error',
-      err: 'No payload included in request'
-    });
-  }
-
-  const t = await db.transaction();
-
-  try {
-    const payload = initialisePayload(req); //Initialise payload
-    await removePin(payload.cid);
-    await deleteAlbum(payload, t); //Delete album
-
-    await t.commit();
-    return res.json({
-      type: 'success'
-    });
-  }
-  catch (err) {
-    await t.rollback();
-    console.error(err);
-    return res.json({
-      type: 'error',
-      err
-    });
-  }
-}
-
 module.exports = {
   initDB,
   userAuthenticated,
@@ -612,6 +583,5 @@ module.exports = {
   postUpload,
   postComment,
   postPinned,
-  postDeleteSong,
-  postDeleteAlbum
+  postDelete
 }
