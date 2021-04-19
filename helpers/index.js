@@ -67,7 +67,7 @@ const getSongsByCID = async (cids, t) => {
     if (!parsed) return [];
 
     //Get data
-    const songs = await db.query(`SELECT s.id, s.title, a.name AS artist, s.format, s.cid, s.tags FROM songs AS s JOIN artists AS a ON a.id = s."artistId" WHERE s.cid IN (${parsed})`, { type: Sequelize.QueryTypes.SELECT, transaction: t });
+    const songs = await db.query(`SELECT s.id, s.title, a.name AS artist, s.format, s.cid, s.tags FROM songs AS s JOIN artists AS a ON a.id = s."artistId" WHERE s.cid IN (${parsed}) AND s."albumId" IS NULL`, { type: Sequelize.QueryTypes.SELECT, transaction: t });
 
     for (let song of songs) {
       const files = await getFiles(song.id, t);
@@ -127,14 +127,14 @@ const getAlbum = async (id, t) => {
   }
 }
 
-const getAlbumsByCID = async (cids, t) => {
+const getAlbumsByArtistAndTitle = async (payload, t) => {
   try {
     //Parse array into string
-    let parsed = stringifyWhereIn(cids);
+    let parsed = stringifyWhereInAlbum(payload);
     if (!parsed) return [];
 
     //Get album
-    const albums = await db.query(`SELECT al.id, al.title, ar.name AS artist,  al.cid, al.tags, al.description FROM albums AS al JOIN artists AS ar ON ar.id = al."artistId" WHERE al.cid IN (${parsed})`, { type: Sequelize.QueryTypes.SELECT, transaction: t });
+    const albums = await db.query(`SELECT al.id, al.title, ar.name AS artist,  al.cid, al.tags, al.description FROM albums AS al JOIN artists AS ar ON ar.id = al."artistId" WHERE (ar.name, al.title) IN (${parsed})`, { type: Sequelize.QueryTypes.SELECT, transaction: t });
 
     //Get songs
     for (let album of albums) {
@@ -256,6 +256,15 @@ const stringifyWhereIn = (array) => {
   return array.map(item => {
     item.trim();
     return `'${item}'`;
+  }).join(', ');
+}
+
+//Parse array of objects into string
+const stringifyWhereInAlbum = (array) => {
+  if (array.length === 0) return false;
+
+  return array.map(item => {
+    return `('${item.artist}', '${item.title}')`;
   }).join(', ');
 }
 
@@ -511,7 +520,7 @@ const postPinned = async (req, res) => {
   try {
     const payload = initialisePayload(req); //Initialise payload
 
-    const albums = await getAlbumsByCID(payload.albums, t);
+    const albums = await getAlbumsByArtistAndTitle(payload.albums, t);
     const songs = await getSongsByCID(payload.songs, t);
 
     await t.commit();
