@@ -35,6 +35,12 @@ module.exports = (sequelize, DataTypes) => {
   }, {
     sequelize,
     modelName: 'album',
+    indexes: [
+      {
+        unique: true,
+        fields: ['title', 'artistId'],
+      }
+    ]
   });
   return album;
 };

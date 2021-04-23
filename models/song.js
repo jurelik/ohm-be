@@ -1,6 +1,7 @@
 'use strict';
 const {
-  Model
+  Model,
+  Op
 } = require('sequelize');
 module.exports = (sequelize, DataTypes) => {
   class song extends Model {
@@ -21,7 +22,7 @@ module.exports = (sequelize, DataTypes) => {
   song.init({
     title: {
       type: DataTypes.STRING,
-      allowNull: false
+      allowNull: false,
     },
     format: {
       type: DataTypes.STRING,
@@ -39,6 +40,15 @@ module.exports = (sequelize, DataTypes) => {
   }, {
     sequelize,
     modelName: 'song',
+    indexes: [
+      {
+        unique: true,
+        fields: ['title', 'artistId'],
+        where: {
+          albumId: { [Op.is]: null }
+        }
+      }
+    ]
   });
   return song;
 };
