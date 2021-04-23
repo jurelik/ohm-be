@@ -320,16 +320,12 @@ const postLogin = async (req, res) => {
 
   try {
     if (payload.artist && payload.pw) {
-      const artist = await db.query(`SELECT id, pw, salt FROM artists WHERE name = '${payload.artist}'`, { type: Sequelize.QueryTypes.SELECT, transaction: t });
-      if (artist.length === 0) throw new Error('Artist not found.');
-
-      const { hash } = await generateHash(payload.pw, artist[0].salt) //Check password
-      if (hash !== artist[0].pw) throw new Error('Wrong password.');
+      const artistId = await checkPassword(payload, t);
 
       //Append data to session and include cookie in response
       req.session.authenticated = true;
       req.session.artist = payload.artist;
-      req.session.artistId = artist[0].id;
+      req.session.artistId = artistId;
 
       await t.commit();
       return res.json({
@@ -345,6 +341,21 @@ const postLogin = async (req, res) => {
       type: 'error',
       err: err.message
     });
+  }
+}
+
+const checkPassword = async (payload, t) => {
+  try {
+    const artist = await db.query(`SELECT id, pw, salt FROM artists WHERE name = '${payload.artist}'`, { type: Sequelize.QueryTypes.SELECT, transaction: t });
+    if (artist.length === 0) throw new Error('Artist not found.');
+
+    const { hash } = await generateHash(payload.pw, artist[0].salt) //Check password
+    if (hash !== artist[0].pw) throw new Error('Wrong password.');
+
+    return artist[0].id;
+  }
+  catch (err) {
+    throw err;
   }
 }
 
@@ -583,6 +594,39 @@ const postDelete = async (req, res) => {
   }
 }
 
+const postChangePassword = async (req, res) => {
+  if (Object.keys(req.body).length === 0) {
+    return res.json({
+      type: 'error',
+      err: 'No payload included in request'
+    });
+  }
+
+  const t = await db.transaction();
+
+  try {
+    const payload = initialisePayload(req); //Initialise payload
+    const artistId = await checkPassword({ pw: payload.old, artist: payload.sessionArtist }, t);
+    const { hash, salt } = await generateHash(payload.new);
+
+    await db.query(`UPDATE artists SET pw = '${hash}', salt = '${salt}' WHERE id = ${artistId}`, { type: Sequelize.QueryTypes.UPDATE, transaction: t }); //Add submission
+
+    req.session.destroy(); //Destroy session, forcing user to login again
+    await t.commit();
+    return res.json({
+      type: 'success'
+    });
+  }
+  catch (err) {
+    await t.rollback();
+    console.error(err);
+    return res.json({
+      type: 'error',
+      err: err.message
+    });
+  }
+}
+
 module.exports = {
   initDB,
   userAuthenticated,
@@ -592,5 +636,6 @@ module.exports = {
   postUpload,
   postComment,
   postPinned,
-  postDelete
+  postDelete,
+  postChangePassword
 }
