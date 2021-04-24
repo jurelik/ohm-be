@@ -327,7 +327,7 @@ const postLogin = async (req, res) => {
   if (!req.body || Object.keys(req.body).length === 0) { //If no session is established, req.body is required
     return res.json({
       type: 'error',
-      err: 'No payload included in request'
+      err: 'No running session found, please login.'
     });
   }
 
@@ -433,6 +433,35 @@ const getArtist = async (req, res) => {
     return res.json({
       type: 'success',
       payload: artist[0]
+    });
+  }
+  catch (err) {
+    await t.rollback();
+    console.error(err);
+    return res.json({
+      type: 'error',
+      err
+    });
+  }
+}
+
+const getSongRoute = async (req, res) => {
+  if (!req.params.id) {
+    return res.json({
+      type: 'error',
+      err: 'No song id included in request'
+    });
+  }
+
+  const t = await db.transaction();
+
+  try {
+    let song = await getSong(req.params.id, t);
+
+    await t.commit();
+    return res.json({
+      type: 'success',
+      payload: song
     });
   }
   catch (err) {
@@ -651,6 +680,7 @@ module.exports = {
   postLogin,
   getLatest,
   getArtist,
+  getSongRoute,
   postUpload,
   postComment,
   postPinned,

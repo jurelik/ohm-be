@@ -41,6 +41,11 @@ app.get('/api/artist/:name', (req, res) => {
   helpers.getArtist(req, res);
 });
 
+app.get('/api/song/:id', (req, res) => {
+  if (!helpers.userAuthenticated(req, res)) return;
+  helpers.getSongRoute(req, res);
+});
+
 app.post('/api/upload', express.json(), (req, res) => {
   if (!helpers.userAuthenticated(req, res)) return;
   helpers.postUpload(req, res);
