@@ -299,6 +299,22 @@ const initialisePayload = (req) => {
   return payload;
 }
 
+const checkPassword = async (payload, t) => {
+  try {
+    const artist = await db.query(`SELECT id, pw, salt FROM artists WHERE name = '${payload.artist}'`, { type: Sequelize.QueryTypes.SELECT, transaction: t });
+    if (artist.length === 0) throw new Error('Artist not found.');
+
+    const { hash } = await generateHash(payload.pw, artist[0].salt) //Check password
+    if (hash !== artist[0].pw) throw new Error('Wrong password.');
+
+    return artist[0].id;
+  }
+  catch (err) {
+    throw err;
+  }
+}
+
+
 //Route handlers
 const postLogin = async (req, res) => {
   if (req.session.authenticated) { //Check if session is already established
@@ -341,21 +357,6 @@ const postLogin = async (req, res) => {
       type: 'error',
       err: err.message
     });
-  }
-}
-
-const checkPassword = async (payload, t) => {
-  try {
-    const artist = await db.query(`SELECT id, pw, salt FROM artists WHERE name = '${payload.artist}'`, { type: Sequelize.QueryTypes.SELECT, transaction: t });
-    if (artist.length === 0) throw new Error('Artist not found.');
-
-    const { hash } = await generateHash(payload.pw, artist[0].salt) //Check password
-    if (hash !== artist[0].pw) throw new Error('Wrong password.');
-
-    return artist[0].id;
-  }
-  catch (err) {
-    throw err;
   }
 }
 
@@ -611,8 +612,25 @@ const postChangePassword = async (req, res) => {
 
     await db.query(`UPDATE artists SET pw = '${hash}', salt = '${salt}' WHERE id = ${artistId}`, { type: Sequelize.QueryTypes.UPDATE, transaction: t }); //Add submission
 
-    req.session.destroy(); //Destroy session, forcing user to login again
+    await req.session.destroy(); //Destroy session, forcing user to login again
     await t.commit();
+    return res.json({
+      type: 'success'
+    });
+  }
+  catch (err) {
+    await t.rollback();
+    console.error(err);
+    return res.json({
+      type: 'error',
+      err: err.message
+    });
+  }
+}
+
+const getLogout = async (req, res) => {
+  try {
+    await req.session.destroy();
     return res.json({
       type: 'success'
     });
@@ -637,5 +655,6 @@ module.exports = {
   postComment,
   postPinned,
   postDelete,
-  postChangePassword
+  postChangePassword,
+  getLogout
 }

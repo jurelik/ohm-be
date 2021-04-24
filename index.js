@@ -66,6 +66,11 @@ app.post('/api/changepassword', express.json(), (req, res) => {
   helpers.postChangePassword(req, res);
 });
 
+app.get('/api/logout', (req, res) => {
+  if (!helpers.userAuthenticated(req, res)) return;
+  helpers.getLogout(req, res);
+});
+
 app.listen(process.env.PORT, () => {
   console.log('Server is listening on port ' + process.env.PORT + '.');
 });
