@@ -27,6 +27,19 @@ app.get('/', (req, res) => {
   res.end('Hello world');
 });
 
+app.get('/test', (req, res) => {
+  let t = 0;
+  const test = () => {
+    setTimeout(() => {
+        if(t === 5) return res.end('done');
+        t++;
+        res.write('hello');
+        test()
+      }, 1000)
+  } 
+  test();
+})
+
 app.post('/api/login', express.json(), (req, res) => {
   helpers.postLogin(req, res);
 });

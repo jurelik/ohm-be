@@ -46,7 +46,7 @@ const getSong = async (id, t) => {
     //Get data
     const song = await db.query(`SELECT s.id, s.title, a.name AS artist, s.format, s.cid, s.tags FROM songs AS s JOIN artists AS a ON a.id = s."artistId" WHERE s.id = ${id}`, { type: Sequelize.QueryTypes.SELECT, transaction: t });
     const files = await getFiles(id, t);
-    const comments = await db.query(`SELECT c.id, c.content, a.name AS artist FROM comments AS c JOIN artists AS a ON a.id = c."artistId" WHERE "songId" = ${id} ORDER BY id DESC`, { type: Sequelize.QueryTypes.SELECT, transaction: t });
+    const comments = await db.query(`SELECT c.id, c.content, a.name AS artist FROM comments AS c JOIN artists AS a ON a.id = c."artistId" WHERE "songId" = ${id} ORDER BY c.id DESC`, { type: Sequelize.QueryTypes.SELECT, transaction: t });
 
     //Append additional data to song
     song[0].type = 'song';
@@ -71,7 +71,7 @@ const getSongsByCID = async (cids, t) => {
 
     for (let song of songs) {
       const files = await getFiles(song.id, t);
-      const comments = await db.query(`SELECT c.id, c.content, a.name AS artist FROM comments AS c JOIN artists AS a ON a.id = c."artistId" WHERE "songId" = ${song.id} ORDER BY id DESC`, { type: Sequelize.QueryTypes.SELECT, transaction: t });
+      const comments = await db.query(`SELECT c.id, c.content, a.name AS artist FROM comments AS c JOIN artists AS a ON a.id = c."artistId" WHERE "songId" = ${song.id} ORDER BY c.id DESC`, { type: Sequelize.QueryTypes.SELECT, transaction: t });
 
       //Append additional data to song
       song.type = 'song';
@@ -365,7 +365,7 @@ const getLatest = async (req, res) => {
 
   try {
     const a = [];
-    const submissions = await db.query(`SELECT "songId", "albumId" FROM submissions WHERE "albumId" IS NOT NULL OR "songId" IS NOT NULL ORDER BY "createdAt" DESC LIMIT 5`, { type: Sequelize.QueryTypes.SELECT, transaction: t });
+    const submissions = await db.query(`SELECT "songId", "albumId" FROM submissions WHERE "albumId" IS NOT NULL OR "songId" IS NOT NULL ORDER BY "createdAt" DESC LIMIT 10`, { type: Sequelize.QueryTypes.SELECT, transaction: t });
 
     for (let submission of submissions) {
       if (submission.songId) {
@@ -474,6 +474,20 @@ const getSongRoute = async (req, res) => {
   }
 }
 
+const uploadTimeout = (res, cid) => {
+  return setTimeout(async () => {
+    try {
+      const stat = await app.ipfs.files.stat(`/ipfs/${transfer.cid}`, { withLocal: true, timeout: 2000 });
+      const percentage = Math.round(stat.sizeLocal / stat.cumulativeSize * 100);
+      res.write(percentage);
+      return uploadTimeout(cid);
+    }
+    catch (err) {
+      console.log(err.message)
+    }
+  }, 1000);
+}
+
 const postUpload = async (req, res) => {
   if (Object.keys(req.body).length === 0) {
     return res.json({
@@ -486,6 +500,8 @@ const postUpload = async (req, res) => {
 
   try {
     const payload = initialisePayload(req); //Initialise payload object
+    const cid = payload.album ? payload.album.cid : payload.songs[0].cid;
+
     if (!payload.artistId) throw new Error('Session is missing artist data. Try to login again.'); //Check for missing data
 
     process.env.NODE_ENV === 'production' ? await ipfs.swarm.connect(payload.multiaddr) : null; //Try to init connection to node
@@ -499,7 +515,9 @@ const postUpload = async (req, res) => {
       await db.query(`INSERT INTO submissions (type, "artistId", "songId",  "createdAt", "updatedAt") VALUES ('album', 1, ${songId}, NOW(), NOW())`, { type: Sequelize.QueryTypes.INSERT, transaction: t }); //Add submission
     }
 
-    await ipfs.pin.add(`/ipfs/${payload.album ? payload.album.cid : payload.songs[0].cid}`);
+    const timeout = uploadTimeout(res, cid);
+    await ipfs.pin.add(`/ipfs/${cid}`);
+    clearTimeout(timeout);
 
     await t.commit();
     return res.json({
@@ -508,6 +526,7 @@ const postUpload = async (req, res) => {
   }
   catch (err) {
     await t.rollback();
+    clearTimeout(timeout);
     console.error(err);
     return res.json({
       type: 'error',
