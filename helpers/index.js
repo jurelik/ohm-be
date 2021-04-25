@@ -474,18 +474,34 @@ const getSongRoute = async (req, res) => {
   }
 }
 
-const uploadTimeout = (res, cid) => {
+const uploadTimeout = (res, cid, timeout) => {
   return setTimeout(async () => {
     try {
-      const stat = await app.ipfs.files.stat(`/ipfs/${transfer.cid}`, { withLocal: true, timeout: 2000 });
+      console.log('a')
+      const stat = await ipfs.files.stat(`/ipfs/${cid}`, { withLocal: true, timeout: 2000 });
       const percentage = Math.round(stat.sizeLocal / stat.cumulativeSize * 100);
-      res.write(percentage);
-      return uploadTimeout(cid);
+      res.write(`${percentage}`);
+      timeout = uploadTimeout(res, cid);
+    }
+    catch (err) {
+      console.log(err.message)
+      timeout = uploadTimeout(res, cid);
+    }
+  }, 1000);
+}
+
+const uploadInterval = (res, cid) => {
+  return setInterval(async () => {
+    try {
+      console.log('a')
+      const stat = await ipfs.files.stat(`/ipfs/${cid}`, { withLocal: true, timeout: 2000 });
+      const percentage = Math.round(stat.sizeLocal / stat.cumulativeSize * 100);
+      res.write(`${percentage}`);
     }
     catch (err) {
       console.log(err.message)
     }
-  }, 1000);
+  }, 1000)
 }
 
 const postUpload = async (req, res) => {
@@ -497,6 +513,7 @@ const postUpload = async (req, res) => {
   }
 
   const t = await db.transaction();
+  let interval;
 
   try {
     const payload = initialisePayload(req); //Initialise payload object
@@ -515,18 +532,20 @@ const postUpload = async (req, res) => {
       await db.query(`INSERT INTO submissions (type, "artistId", "songId",  "createdAt", "updatedAt") VALUES ('album', 1, ${songId}, NOW(), NOW())`, { type: Sequelize.QueryTypes.INSERT, transaction: t }); //Add submission
     }
 
-    const timeout = uploadTimeout(res, cid);
+    interval = uploadInterval(res, cid);
     await ipfs.pin.add(`/ipfs/${cid}`);
-    clearTimeout(timeout);
+    setTimeout(async () => {
+      clearInterval(interval);
+      await t.commit();
+      return res.end(JSON.stringify({
+        type: 'success'
+      }));
+    }, 5000)
 
-    await t.commit();
-    return res.json({
-      type: 'success'
-    });
   }
   catch (err) {
     await t.rollback();
-    clearTimeout(timeout);
+    clearInterval(interval);
     console.error(err);
     return res.json({
       type: 'error',
