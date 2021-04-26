@@ -493,13 +493,12 @@ const uploadTimeout = (res, cid, timeout) => {
 const uploadInterval = (res, cid) => {
   return setInterval(async () => {
     try {
-      console.log('a')
       const stat = await ipfs.files.stat(`/ipfs/${cid}`, { withLocal: true, timeout: 2000 });
       const percentage = Math.round(stat.sizeLocal / stat.cumulativeSize * 100);
       res.write(`${percentage}`);
     }
     catch (err) {
-      console.log(err.message)
+      res.write(err.message);
     }
   }, 1000)
 }
@@ -534,14 +533,12 @@ const postUpload = async (req, res) => {
 
     interval = uploadInterval(res, cid);
     await ipfs.pin.add(`/ipfs/${cid}`);
-    setTimeout(async () => {
-      clearInterval(interval);
-      await t.commit();
-      return res.end(JSON.stringify({
-        type: 'success'
-      }));
-    }, 5000)
+    clearInterval(interval);
 
+    await t.commit();
+    return res.end(JSON.stringify({
+      type: 'success'
+    }));
   }
   catch (err) {
     await t.rollback();
