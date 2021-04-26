@@ -314,6 +314,18 @@ const checkPassword = async (payload, t) => {
   }
 }
 
+const uploadInterval = (res, cid) => {
+  return setInterval(async () => {
+    try {
+      const stat = await ipfs.files.stat(`/ipfs/${cid}`, { withLocal: true, timeout: 2000 });
+      const percentage = Math.round(stat.sizeLocal / stat.cumulativeSize * 100);
+      res.write(`${percentage}`);
+    }
+    catch (err) {
+      res.write(err.message);
+    }
+  }, 1000)
+}
 
 //Route handlers
 const postLogin = async (req, res) => {
@@ -490,19 +502,6 @@ const uploadTimeout = (res, cid, timeout) => {
   }, 1000);
 }
 
-const uploadInterval = (res, cid) => {
-  return setInterval(async () => {
-    try {
-      const stat = await ipfs.files.stat(`/ipfs/${cid}`, { withLocal: true, timeout: 2000 });
-      const percentage = Math.round(stat.sizeLocal / stat.cumulativeSize * 100);
-      res.write(`${percentage}`);
-    }
-    catch (err) {
-      res.write(err.message);
-    }
-  }, 1000)
-}
-
 const postUpload = async (req, res) => {
   if (Object.keys(req.body).length === 0) {
     return res.json({
@@ -531,9 +530,9 @@ const postUpload = async (req, res) => {
       await db.query(`INSERT INTO submissions (type, "artistId", "songId",  "createdAt", "updatedAt") VALUES ('album', 1, ${songId}, NOW(), NOW())`, { type: Sequelize.QueryTypes.INSERT, transaction: t }); //Add submission
     }
 
-    interval = uploadInterval(res, cid);
+    interval = uploadInterval(res, cid); //Send progress every second
     await ipfs.pin.add(`/ipfs/${cid}`);
-    clearInterval(interval);
+    clearInterval(interval); //Stop sending progress
 
     await t.commit();
     return res.end(JSON.stringify({
