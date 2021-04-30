@@ -671,12 +671,45 @@ const getFollow = async (req, res) => {
     });
   }
 
+  if (req.params.id === req.session.artistId.toString()) {
+    return res.json({
+      type: 'error',
+      err: 'You cannot follow yourself'
+    });
+  }
+
   const t = await db.transaction();
 
   try {
-    const payload = initialisePayload(req); //Initialise payload
+    await db.query(`INSERT INTO follows ("followerId", "followingId", "createdAt", "updatedAt") VALUES (${req.session.artistId}, ${req.params.id}, NOW(), NOW())`, { type: Sequelize.QueryTypes.INSERT, transaction: t });
 
-    await db.query(`INSERT INTO follows ("followerId", "followingId", "createdAt", "updatedAt") VALUES (${payload.artistId}, ${req.params.id}, NOW(), NOW())`, { type: Sequelize.QueryTypes.INSERT, transaction: t });
+    await t.commit();
+    return res.json({
+      type: 'success'
+    });
+  }
+  catch (err) {
+    await t.rollback();
+    console.error(err);
+    return res.json({
+      type: 'error',
+      err: err.message
+    });
+  }
+}
+
+const getUnfollow = async (req, res) => {
+  if (!req.params.id) {
+    return res.json({
+      type: 'error',
+      err: 'No user id included in request'
+    });
+  }
+
+  const t = await db.transaction();
+
+  try {
+    await db.query(`DELETE FROM follows WHERE "followerId" = ${req.session.artistId} AND "followingId" = ${req.params.id}`, { type: Sequelize.QueryTypes.DELETE, transaction: t });
 
     await t.commit();
     return res.json({
@@ -755,6 +788,7 @@ module.exports = {
   postPinned,
   postDelete,
   getFollow,
+  getUnfollow,
   postChangePassword,
   getLogout
 }

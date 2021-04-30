@@ -71,6 +71,11 @@ app.get('/api/follow/:id', express.json(), (req, res) => {
   helpers.getFollow(req, res);
 });
 
+app.get('/api/unfollow/:id', express.json(), (req, res) => {
+  if (!helpers.userAuthenticated(req, res)) return;
+  helpers.getUnfollow(req, res);
+});
+
 app.post('/api/changepassword', express.json(), (req, res) => {
   if (!helpers.userAuthenticated(req, res)) return;
   helpers.postChangePassword(req, res);
