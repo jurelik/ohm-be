@@ -481,7 +481,7 @@ const getSongRoute = async (req, res) => {
     console.error(err);
     return res.json({
       type: 'error',
-      err
+      err: err.message
     });
   }
 }
@@ -658,6 +658,36 @@ const postDelete = async (req, res) => {
   }
 }
 
+const getFollow = async (req, res) => {
+  if (!req.params.id) {
+    return res.json({
+      type: 'error',
+      err: 'No user id included in request'
+    });
+  }
+
+  const t = await db.transaction();
+
+  try {
+    const payload = initialisePayload(req); //Initialise payload
+
+    await db.query(`INSERT INTO follows ("followerId", "followingId", "createdAt", "updatedAt") VALUES (${payload.artistId}, ${req.params.id}, NOW(), NOW())`, { type: Sequelize.QueryTypes.INSERT, transaction: t });
+
+    await t.commit();
+    return res.json({
+      type: 'success'
+    });
+  }
+  catch (err) {
+    await t.rollback();
+    console.error(err);
+    return res.json({
+      type: 'error',
+      err: err.message
+    });
+  }
+}
+
 const postChangePassword = async (req, res) => {
   if (Object.keys(req.body).length === 0) {
     return res.json({
@@ -719,6 +749,7 @@ module.exports = {
   postComment,
   postPinned,
   postDelete,
+  getFollow,
   postChangePassword,
   getLogout
 }

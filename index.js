@@ -66,6 +66,11 @@ app.post('/api/delete', express.json(), (req, res) => {
   helpers.postDelete(req, res);
 });
 
+app.get('/api/follow/:id', express.json(), (req, res) => {
+  if (!helpers.userAuthenticated(req, res)) return;
+  helpers.getFollow(req, res);
+});
+
 app.post('/api/changepassword', express.json(), (req, res) => {
   if (!helpers.userAuthenticated(req, res)) return;
   helpers.postChangePassword(req, res);
