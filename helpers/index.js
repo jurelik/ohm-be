@@ -425,7 +425,7 @@ const getArtist = async (req, res) => {
     artist[0].albums = [];
     artist[0].songs = [];
 
-    //Get album
+    //Get albums
     const albums = await db.query(`SELECT id FROM albums WHERE "artistId" = '${artist[0].id}' ORDER BY id DESC`, { type: Sequelize.QueryTypes.SELECT, transaction: t })
 
     for (let _album of albums) {
@@ -440,6 +440,11 @@ const getArtist = async (req, res) => {
       let song = await getSong(_song.id, t);
       artist[0].songs.push(song);
     }
+
+    //Check if user is following the artist
+    const following = await db.query(`SELECT id FROM follows WHERE "followerId" = ${req.session.artistId} AND "followingId" = ${artist[0].id}`, { type: Sequelize.QueryTypes.SELECT, transaction: t });
+    if (following.length === 1) artist[0].following = true;
+    else artist[0].following = false;
 
     await t.commit();
     return res.json({
