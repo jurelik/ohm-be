@@ -36,6 +36,11 @@ app.get('/api/latest', (req, res) => {
   helpers.getLatest(req, res);
 });
 
+app.get('/api/feed', (req, res) => {
+  if (!helpers.userAuthenticated(req, res)) return;
+  helpers.getFeed(req, res);
+});
+
 app.get('/api/artist/:name', (req, res) => {
   if (!helpers.userAuthenticated(req, res)) return;
   helpers.getArtist(req, res);

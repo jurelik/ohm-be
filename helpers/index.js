@@ -407,6 +407,43 @@ const getLatest = async (req, res) => {
   }
 }
 
+const getFeed = async (req, res) => {
+  const t = await db.transaction();
+
+  try {
+    const a = [];
+    const submissions = await db.query(`SELECT "songId", "albumId" FROM submissions WHERE ("albumId" IS NOT NULL OR "songId" IS NOT NULL) AND "artistId" IN (SELECT "followingId" FROM follows WHERE "followerId" = ${req.session.artistId}) ORDER BY "createdAt" DESC LIMIT 10`, { type: Sequelize.QueryTypes.SELECT, transaction: t });
+
+    if (submissions.length > 0) {
+      for (let submission of submissions) {
+        if (submission.songId) {
+          //Get song
+          const song = await getSong(submission.songId, t);
+          a.push(song);
+        }
+        else if (submission.albumId) {
+          //Get album
+          const album = await getAlbum(submission.albumId, t);
+          a.push(album);
+        }
+      }
+    }
+
+    await t.commit();
+    return res.json({
+      type: 'success',
+      payload: a
+    });
+  }
+  catch (err) {
+    await t.rollback();
+    return res.json({
+      type: 'error',
+      err
+    });
+  }
+}
+
 const getArtist = async (req, res) => {
   if (!req.params.name) {
     return res.json({
@@ -528,11 +565,11 @@ const postUpload = async (req, res) => {
 
     if (payload.album) {
       const albumId = await addAlbum(payload, t); //Add album
-      await db.query(`INSERT INTO submissions (type, "artistId", "albumId",  "createdAt", "updatedAt") VALUES ('album', 1, ${albumId}, NOW(), NOW())`, { type: Sequelize.QueryTypes.INSERT, transaction: t }); //Add submission
+      await db.query(`INSERT INTO submissions (type, "artistId", "albumId",  "createdAt", "updatedAt") VALUES ('album', ${payload.artistId}, ${albumId}, NOW(), NOW())`, { type: Sequelize.QueryTypes.INSERT, transaction: t }); //Add submission
     }
     else {
       const songId = await addSong({ song: payload.songs[0], artistId: payload.artistId }, t); //Add song
-      await db.query(`INSERT INTO submissions (type, "artistId", "songId",  "createdAt", "updatedAt") VALUES ('album', 1, ${songId}, NOW(), NOW())`, { type: Sequelize.QueryTypes.INSERT, transaction: t }); //Add submission
+      await db.query(`INSERT INTO submissions (type, "artistId", "songId",  "createdAt", "updatedAt") VALUES ('song', ${payload.artistId}, ${songId}, NOW(), NOW())`, { type: Sequelize.QueryTypes.INSERT, transaction: t }); //Add submission
     }
 
     interval = uploadInterval(res, cid); //Send progress every second
@@ -781,6 +818,7 @@ module.exports = {
   userAuthenticated,
   postLogin,
   getLatest,
+  getFeed,
   getArtist,
   getSongRoute,
   postUpload,
