@@ -14,7 +14,7 @@ module.exports = (sequelize, DataTypes) => {
       // define association here
       song.belongsTo(models.artist);
       song.belongsTo(models.album, { onDelete: 'cascade' });
-      song.hasOne(models.submission);
+      song.hasOne(models.submission, { onDelete: 'cascade', hooks: true });
       song.hasMany(models.file);
       song.hasMany(models.comment);
     }

@@ -377,7 +377,7 @@ const getLatest = async (req, res) => {
 
   try {
     const a = [];
-    const submissions = await db.query(`SELECT "songId", "albumId" FROM submissions WHERE "albumId" IS NOT NULL OR "songId" IS NOT NULL ORDER BY "createdAt" DESC LIMIT 10`, { type: Sequelize.QueryTypes.SELECT, transaction: t });
+    const submissions = await db.query(`SELECT "songId", "albumId" FROM submissions ORDER BY "createdAt" DESC LIMIT 10`, { type: Sequelize.QueryTypes.SELECT, transaction: t });
 
     for (let submission of submissions) {
       if (submission.songId) {
@@ -412,7 +412,7 @@ const getFeed = async (req, res) => {
 
   try {
     const a = [];
-    const submissions = await db.query(`SELECT "songId", "albumId" FROM submissions WHERE ("albumId" IS NOT NULL OR "songId" IS NOT NULL) AND "artistId" IN (SELECT "followingId" FROM follows WHERE "followerId" = ${req.session.artistId}) ORDER BY "createdAt" DESC LIMIT 10`, { type: Sequelize.QueryTypes.SELECT, transaction: t });
+    const submissions = await db.query(`SELECT "songId", "albumId" FROM submissions WHERE "artistId" IN (SELECT "followingId" FROM follows WHERE "followerId" = ${req.session.artistId}) OR "artistId" = ${req.session.artistId} ORDER BY "createdAt" DESC LIMIT 10`, { type: Sequelize.QueryTypes.SELECT, transaction: t });
 
     if (submissions.length > 0) {
       for (let submission of submissions) {

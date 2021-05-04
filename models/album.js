@@ -12,7 +12,7 @@ module.exports = (sequelize, DataTypes) => {
     static associate(models) {
       // define association here
       album.hasMany(models.song, { onDelete: 'cascade', hooks: true });
-      album.hasOne(models.submission);
+      album.hasOne(models.submission, { onDelete: 'cascade', hooks: true });
       album.belongsTo(models.artist);
     }
   };

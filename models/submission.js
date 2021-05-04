@@ -11,9 +11,9 @@ module.exports = (sequelize, DataTypes) => {
      */
     static associate(models) {
       // define association here
-      submission.belongsTo(models.song);
-      submission.belongsTo(models.album);
-      submission.belongsTo(models.artist);
+      submission.belongsTo(models.song, { onDelete: 'cascade' });
+      submission.belongsTo(models.album, { onDelete: 'cascade' });
+      submission.belongsTo(models.artist, { onDelete: 'cascade' });
     }
   };
   submission.init({
