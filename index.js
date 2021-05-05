@@ -19,7 +19,8 @@ app.use(session({
   store: new SessionStore({}, db),
   cookie: {
     secure: false, //Change this in production
-    maxAge: 1000 * 60 * 60 //Change this in production
+    maxAge: 1000 * 60 * 60, //Change this in production
+    sameSite: 'none' //Change this in production
   }
 }))
 

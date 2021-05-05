@@ -314,6 +314,17 @@ const checkPassword = async (payload, t) => {
   }
 }
 
+const removePin = async (cid) => {
+  try {
+    for await (const pin of ipfs.pin.ls({ type: 'recursive' })) {
+      if(pin.cid.string === cid) await ipfs.pin.rm(pin.cid, { recursive: true }); //Remove pin from IPFS
+    }
+  }
+  catch (err) {
+    return; //Ignore as this means that the file is no longer pinned already
+  }
+}
+
 const uploadInterval = (res, cid) => {
   return setInterval(async () => {
     try {
@@ -336,17 +347,12 @@ const postLogin = async (req, res) => {
     });
   }
 
-  if (!req.body || Object.keys(req.body).length === 0) { //If no session is established, req.body is required
-    return res.json({
-      type: 'error',
-      err: 'No running session found, please login.'
-    });
-  }
-
   const payload = req.body;
   const t = await db.transaction();
 
   try {
+    if (!req.body || Object.keys(req.body).length === 0) throw new Error('No running session found, please login.') //If no session is established, req.body is required
+
     if (payload.artist && payload.pw) {
       const artistId = await checkPassword(payload, t);
 
@@ -402,7 +408,7 @@ const getLatest = async (req, res) => {
     await t.rollback();
     return res.json({
       type: 'error',
-      err
+      err: err.message
     });
   }
 }
@@ -439,24 +445,18 @@ const getFeed = async (req, res) => {
     await t.rollback();
     return res.json({
       type: 'error',
-      err
+      err: err.message
     });
   }
 }
 
 const getArtist = async (req, res) => {
-  if (!req.params.name) {
-    return res.json({
-      type: 'error',
-      err: 'No artist name included in request'
-    });
-  }
-
   const t = await db.transaction();
 
   try {
-    const artist = await db.query(`SELECT id, name, bio, location FROM artists WHERE name = '${req.params.name}'`, { type: Sequelize.QueryTypes.SELECT, transaction: t });
+    if (!req.params.name) throw new Error('No artist name included in request');
 
+    const artist = await db.query(`SELECT id, name, bio, location FROM artists WHERE name = '${req.params.name}'`, { type: Sequelize.QueryTypes.SELECT, transaction: t });
     if (artist.length === 0) throw 'Artist not found';
 
     artist[0].albums = [];
@@ -494,22 +494,16 @@ const getArtist = async (req, res) => {
     console.error(err);
     return res.json({
       type: 'error',
-      err
+      err: err.message
     });
   }
 }
 
 const getSongRoute = async (req, res) => {
-  if (!req.params.id) {
-    return res.json({
-      type: 'error',
-      err: 'No song id included in request'
-    });
-  }
-
   const t = await db.transaction();
 
   try {
+    if (!req.params.id) throw new Error('No song id included in request.');
     let song = await getSong(req.params.id, t);
 
     await t.commit();
@@ -531,7 +525,6 @@ const getSongRoute = async (req, res) => {
 const uploadTimeout = (res, cid, timeout) => {
   return setTimeout(async () => {
     try {
-      console.log('a')
       const stat = await ipfs.files.stat(`/ipfs/${cid}`, { withLocal: true, timeout: 2000 });
       const percentage = Math.round(stat.sizeLocal / stat.cumulativeSize * 100);
       res.write(`${percentage}`);
@@ -545,17 +538,12 @@ const uploadTimeout = (res, cid, timeout) => {
 }
 
 const postUpload = async (req, res) => {
-  if (Object.keys(req.body).length === 0) {
-    return res.json({
-      type: 'error',
-      err: 'No payload included in request'
-    });
-  }
-
   const t = await db.transaction();
   let interval;
 
   try {
+    if (Object.keys(req.body).length === 0) throw new Error('No payload included in request.');
+
     const payload = initialisePayload(req); //Initialise payload object
     const cid = payload.album ? payload.album.cid : payload.songs[0].cid;
 
@@ -593,16 +581,11 @@ const postUpload = async (req, res) => {
 }
 
 const postComment = async (req, res) => {
-  if (Object.keys(req.body).length === 0) {
-    return res.json({
-      type: 'error',
-      err: 'No payload included in request'
-    });
-  }
-
   const t = await db.transaction();
 
   try {
+    if (Object.keys(req.body).length === 0) throw new Error('No payload included in request.');
+
     const payload = initialisePayload(req); //Initialise payload
     if (!payload.songId || !payload.content) throw new Error('Payload is missing data'); //Check for missing data
     if (!payload.artistId) throw new Error('Session is missing artist data. Try to login again.'); //Check for missing data
@@ -625,18 +608,12 @@ const postComment = async (req, res) => {
 }
 
 const postPinned = async (req, res) => {
-  if (Object.keys(req.body).length === 0) {
-    return res.json({
-      type: 'error',
-      err: 'No payload included in request'
-    });
-  }
-
   const t = await db.transaction();
 
   try {
-    const payload = initialisePayload(req); //Initialise payload
+    if (Object.keys(req.body).length === 0) throw new Error('No payload included in request.');
 
+    const payload = initialisePayload(req); //Initialise payload
     const albums = await getAlbumsByArtistAndTitle(payload.albums, t);
     const songs = await getSongsByCID(payload.songs, t);
 
@@ -659,28 +636,12 @@ const postPinned = async (req, res) => {
   }
 }
 
-const removePin = async (cid) => {
-  try {
-    for await (const pin of ipfs.pin.ls({ type: 'recursive' })) {
-      if(pin.cid.string === cid) await ipfs.pin.rm(pin.cid, { recursive: true }); //Remove pin from IPFS
-    }
-  }
-  catch (err) {
-    return; //Ignore as this means that the file is no longer pinned already
-  }
-}
-
 const postDelete = async (req, res) => {
-  if (Object.keys(req.body).length === 0) {
-    return res.json({
-      type: 'error',
-      err: 'No payload included in request'
-    });
-  }
-
   const t = await db.transaction();
 
   try {
+    if (Object.keys(req.body).length === 0) throw new Error('No payload included in request.');
+
     const payload = initialisePayload(req); //Initialise payload
     await removePin(payload.cid);
     payload.type === 'song' ? await deleteSong(payload, t) : await deleteAlbum(payload, t); //Delete song or album
@@ -701,23 +662,12 @@ const postDelete = async (req, res) => {
 }
 
 const getFollow = async (req, res) => {
-  if (!req.params.id) {
-    return res.json({
-      type: 'error',
-      err: 'No user id included in request'
-    });
-  }
-
-  if (req.params.id === req.session.artistId.toString()) {
-    return res.json({
-      type: 'error',
-      err: 'You cannot follow yourself'
-    });
-  }
-
   const t = await db.transaction();
 
   try {
+    if (!req.params.id) throw new Error('No user id included in request.');
+    if (req.params.id === req.session.artistId.toString()) throw new Error('You cannot follow yourself.');
+
     await db.query(`INSERT INTO follows ("followerId", "followingId", "createdAt", "updatedAt") VALUES (${req.session.artistId}, ${req.params.id}, NOW(), NOW())`, { type: Sequelize.QueryTypes.INSERT, transaction: t });
 
     await t.commit();
@@ -736,16 +686,10 @@ const getFollow = async (req, res) => {
 }
 
 const getUnfollow = async (req, res) => {
-  if (!req.params.id) {
-    return res.json({
-      type: 'error',
-      err: 'No user id included in request'
-    });
-  }
-
   const t = await db.transaction();
 
   try {
+    if (!req.params.id) throw new Error('No user id included in request.');
     await db.query(`DELETE FROM follows WHERE "followerId" = ${req.session.artistId} AND "followingId" = ${req.params.id}`, { type: Sequelize.QueryTypes.DELETE, transaction: t });
 
     await t.commit();
@@ -764,16 +708,11 @@ const getUnfollow = async (req, res) => {
 }
 
 const postChangePassword = async (req, res) => {
-  if (Object.keys(req.body).length === 0) {
-    return res.json({
-      type: 'error',
-      err: 'No payload included in request'
-    });
-  }
-
   const t = await db.transaction();
 
   try {
+    if (Object.keys(req.body).length === 0) throw new Error('No payload included in request.');
+
     const payload = initialisePayload(req); //Initialise payload
     const artistId = await checkPassword({ pw: payload.old, artist: payload.sessionArtist }, t);
     const { hash, salt } = await generateHash(payload.new);
