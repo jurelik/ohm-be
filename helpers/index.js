@@ -174,6 +174,8 @@ const addAlbum = async (payload, t) => {
 
 const addSong = async (data, t) => {
   try {
+    if (data.song.format !== 'mp3') throw new Error('Song files must be mp3 only.'); //Only allow mp3s as original song files
+
     //Convert tags into a string for postgres
     const stringifiedTags = stringifyTags(data.song.tags);
     let song;
@@ -573,10 +575,10 @@ const postUpload = async (req, res) => {
     await t.rollback();
     clearInterval(interval);
     console.error(err);
-    return res.json({
+    return res.end(JSON.stringify({
       type: 'error',
       err: err.message
-    });
+    }));
   }
 }
 
