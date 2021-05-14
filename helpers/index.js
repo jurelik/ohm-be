@@ -44,7 +44,7 @@ const initDB = () => {
 const getSong = async (id, t) => {
   try {
     //Get data
-    const song = await db.query(`SELECT s.id, s.title, a.name AS artist, s.format, s.cid, s.tags FROM songs AS s JOIN artists AS a ON a.id = s."artistId" WHERE s.id = ${id}`, { type: Sequelize.QueryTypes.SELECT, transaction: t });
+    const song = await db.query(`SELECT s.id, s.title, a.name AS artist, s."albumId" AS "albumId", s.format, s.cid, s.tags FROM songs AS s JOIN artists AS a ON a.id = s."artistId" WHERE s.id = ${id}`, { type: Sequelize.QueryTypes.SELECT, transaction: t });
     const files = await getFiles(id, t);
     const comments = await db.query(`SELECT c.id, c.content, a.name AS artist FROM comments AS c JOIN artists AS a ON a.id = c."artistId" WHERE "songId" = ${id} ORDER BY c.id DESC`, { type: Sequelize.QueryTypes.SELECT, transaction: t });
 
@@ -67,7 +67,7 @@ const getSongsByCID = async (cids, t) => {
     if (!parsed) return [];
 
     //Get data
-    const songs = await db.query(`SELECT s.id, s.title, a.name AS artist, s.format, s.cid, s.tags FROM songs AS s JOIN artists AS a ON a.id = s."artistId" WHERE s.cid IN (${parsed}) AND s."albumId" IS NULL ORDER BY s.id DESC`, { type: Sequelize.QueryTypes.SELECT, transaction: t });
+    const songs = await db.query(`SELECT s.id, s.title, a.name AS artist, s."albumId" AS "albumId" s.format, s.cid, s.tags FROM songs AS s JOIN artists AS a ON a.id = s."artistId" WHERE s.cid IN (${parsed}) AND s."albumId" IS NULL ORDER BY s.id DESC`, { type: Sequelize.QueryTypes.SELECT, transaction: t });
 
     for (let song of songs) {
       const files = await getFiles(song.id, t);
