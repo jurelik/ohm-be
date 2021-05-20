@@ -86,7 +86,7 @@ const getSongsByCID = async (cids, t) => {
   }
 }
 
-const getSongsByName = async (searchQuery, t) => {
+const getSongsByPartialTitle = async (searchQuery, t) => {
   try {
     //Get data
     const songs = await db.query(`SELECT s.id, s.title, a.name AS artist, s."albumId" AS "albumId", s.format, s.cid, s.tags FROM songs AS s JOIN artists AS a ON a.id = s."artistId" WHERE s.title LIKE '%${searchQuery}%' AND s."albumId" IS NULL ORDER BY s.id DESC`, { type: Sequelize.QueryTypes.SELECT, transaction: t });
@@ -104,7 +104,6 @@ const getSongsByName = async (searchQuery, t) => {
     return songs;
   }
   catch (err) {
-    console.error(err)
     throw err.message;
   }
 }
@@ -144,6 +143,32 @@ const getAlbum = async (id, t) => {
     album[0].type = 'album';
 
     return album[0];
+  }
+  catch (err) {
+    throw err.message;
+  }
+}
+
+const getAlbumsByPartialTitle = async (searchQuery, t) => {
+  try {
+    //Get albums
+    const albums = await db.query(`SELECT al.id, al.title, ar.name AS artist,  al.cid, al.tags, al.description FROM albums AS al JOIN artists AS ar ON ar.id = al."artistId" WHERE al.title LIKE '%${searchQuery}%' ORDER BY al.id DESC`, { type: Sequelize.QueryTypes.SELECT, transaction: t });
+
+    //Get songs
+    for (let album of albums) {
+      album.songs = [];
+      const songs = await db.query(`SELECT id FROM songs WHERE "albumId" = '${album.id}'`, { type: Sequelize.QueryTypes.SELECT, transaction: t });
+
+      for (let _song of songs) {
+        let song = await getSong(_song.id, t);
+        album.songs.push(song);
+      }
+
+      //Append additional data to album
+      album.type = 'album';
+    }
+
+    return albums;
   }
   catch (err) {
     throw err.message;
@@ -663,17 +688,26 @@ const postPinned = async (req, res) => {
 
 const postSearch = async (req, res) => {
   const t = await db.transaction();
+  let payload;
 
   try {
     if (Object.keys(req.body).length === 0) throw new Error('No payload included in request.');
-    const songs = await getSongsByName(req.body.searchQuery, t);
+
+    switch (req.body.searchCategory) {
+      case 'songs':
+        payload = await getSongsByPartialTitle(req.body.searchQuery, t);
+        break;
+      case 'albums':
+        payload = await getAlbumsByPartialTitle(req.body.searchQuery, t);
+        break;
+      default:
+        throw new Error('Search category not provided.');
+    }
 
     await t.commit();
     return res.json({
       type: 'success',
-      payload: {
-        songs
-      }
+      payload
     });
   }
   catch (err) {
