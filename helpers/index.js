@@ -86,6 +86,28 @@ const getSongsByCID = async (cids, t) => {
   }
 }
 
+const getSongsByName = async (searchQuery, t) => {
+  try {
+    //Get data
+    const songs = await db.query(`SELECT s.id, s.title, a.name AS artist, s."albumId" AS "albumId" s.format, s.cid, s.tags FROM songs AS s JOIN artists AS a ON a.id = s."artistId" WHERE s.name LIKE '%${searchQuery}%' AND s."albumId" IS NULL ORDER BY s.id DESC`, { type: Sequelize.QueryTypes.SELECT, transaction: t });
+
+    for (let song of songs) {
+      const files = await getFiles(song.id, t);
+      const comments = await db.query(`SELECT c.id, c.content, a.name AS artist FROM comments AS c JOIN artists AS a ON a.id = c."artistId" WHERE "songId" = ${song.id} ORDER BY c.id DESC`, { type: Sequelize.QueryTypes.SELECT, transaction: t });
+
+      //Append additional data to song
+      song.type = 'song';
+      song.files = files;
+      song.comments = comments;
+    }
+
+    return songs;
+  }
+  catch (err) {
+    throw err.message;
+  }
+}
+
 const getFiles = async (id, t) => {
   try {
     const files = await db.query(`SELECT id, type, "fileId" FROM files WHERE "songId" = ${id}`, { type: Sequelize.QueryTypes.SELECT, transaction: t });
@@ -638,6 +660,31 @@ const postPinned = async (req, res) => {
   }
 }
 
+const postSearch = async (req, res) => {
+  const t = await db.transaction();
+
+  try {
+    if (Object.keys(req.body).length === 0) throw new Error('No payload included in request.');
+    const songs = await getSongsByName(req.body.searchQuery, t);
+
+    await t.commit();
+    return res.json({
+      type: 'success',
+      payload: {
+        songs
+      }
+    });
+  }
+  catch (err) {
+    await t.rollback();
+    console.error(err);
+    return res.json({
+      type: 'error',
+      err
+    });
+  }
+}
+
 const postDelete = async (req, res) => {
   const t = await db.transaction();
 
@@ -765,6 +812,7 @@ module.exports = {
   postUpload,
   postComment,
   postPinned,
+  postSearch,
   postDelete,
   getFollow,
   getUnfollow,
