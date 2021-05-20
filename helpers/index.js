@@ -86,10 +86,20 @@ const getSongsByCID = async (cids, t) => {
   }
 }
 
-const getSongsByPartialTitle = async (searchQuery, t) => {
+const getSongsBySearch = async (payload, t) => {
   try {
-    //Get data
-    const songs = await db.query(`SELECT s.id, s.title, a.name AS artist, s."albumId" AS "albumId", s.format, s.cid, s.tags FROM songs AS s JOIN artists AS a ON a.id = s."artistId" WHERE s.title LIKE '%${searchQuery}%' AND s."albumId" IS NULL ORDER BY s.id DESC`, { type: Sequelize.QueryTypes.SELECT, transaction: t });
+    let songs;
+
+    switch (payload.searchBy) {
+      case 'title':
+        songs = await db.query(`SELECT s.id, s.title, a.name AS artist, s."albumId" AS "albumId", s.format, s.cid, s.tags FROM songs AS s JOIN artists AS a ON a.id = s."artistId" WHERE s.title LIKE '%${payload.searchQuery}%' AND s."albumId" IS NULL ORDER BY s.id DESC`, { type: Sequelize.QueryTypes.SELECT, transaction: t });
+        break;
+      case 'tags':
+        songs = await db.query(`SELECT s.id, s.title, a.name AS artist, s."albumId" AS "albumId", s.format, s.cid, s.tags FROM songs AS s JOIN artists AS a ON a.id = s."artistId" WHERE '${payload.searchQuery}' = ANY(s.tags) AND s."albumId" IS NULL ORDER BY s.id DESC`, { type: Sequelize.QueryTypes.SELECT, transaction: t });
+        break;
+      default:
+        throw new Error('searchBy value not provided.');
+    }
 
     for (let song of songs) {
       const files = await getFiles(song.id, t);
@@ -149,7 +159,7 @@ const getAlbum = async (id, t) => {
   }
 }
 
-const getAlbumsByPartialTitle = async (searchQuery, t) => {
+const getAlbumsBySearch = async (searchQuery, t) => {
   try {
     //Get albums
     const albums = await db.query(`SELECT al.id, al.title, ar.name AS artist,  al.cid, al.tags, al.description FROM albums AS al JOIN artists AS ar ON ar.id = al."artistId" WHERE al.title LIKE '%${searchQuery}%' ORDER BY al.id DESC`, { type: Sequelize.QueryTypes.SELECT, transaction: t });
@@ -695,10 +705,16 @@ const postSearch = async (req, res) => {
 
     switch (req.body.searchCategory) {
       case 'songs':
-        payload = await getSongsByPartialTitle(req.body.searchQuery, t);
+        payload = await getSongsBySearch(req.body, t);
         break;
       case 'albums':
-        payload = await getAlbumsByPartialTitle(req.body.searchQuery, t);
+        payload = await getAlbumsBySearch(req.body, t);
+        break;
+      case 'artists':
+        payload = await getAlbumsBySearch(req.body, t);
+        break;
+      case 'files':
+        payload = await getAlbumsBySearch(req.body, t);
         break;
       default:
         throw new Error('Search category not provided.');
