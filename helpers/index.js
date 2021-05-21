@@ -570,6 +570,16 @@ const getArtist = async (req, res) => {
   }
 }
 
+const getArtistsBySearch = async (payload, t) => {
+  try {
+    const artists = await db.query(`SELECT id, name, location FROM artists WHERE name LIKE '%${payload.searchQuery}%'`, { type: Sequelize.QueryTypes.SELECT, transaction: t });
+    return artists;
+  }
+  catch (err) {
+    throw err.message;
+  }
+}
+
 const getSongRoute = async (req, res) => {
   const t = await db.transaction();
 
@@ -722,7 +732,7 @@ const postSearch = async (req, res) => {
         payload = await getAlbumsBySearch(req.body, t);
         break;
       case 'artists':
-        payload = await getAlbumsBySearch(req.body, t);
+        payload = await getArtistsBySearch(req.body, t);
         break;
       case 'files':
         payload = await getAlbumsBySearch(req.body, t);
