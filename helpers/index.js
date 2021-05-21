@@ -136,6 +136,34 @@ const getFiles = async (id, t) => {
   }
 }
 
+const getFilesBySearch = async (payload, t) => {
+  try {
+    let songs = [];
+    let files;
+
+    switch (payload.searchBy) {
+      case 'name':
+        files = await db.query(`SELECT id, "songId" FROM files WHERE name LIKE '%${payload.searchQuery}%' AND "fileId" IS NULL`, { type: Sequelize.QueryTypes.SELECT, transaction: t });
+        break;
+      case 'tags':
+        files = await db.query(`SELECT id, "songId" FROM files WHERE '${payload.searchQuery}' = ANY(tags) AND "fileId" IS NULL`, { type: Sequelize.QueryTypes.SELECT, transaction: t });
+        break;
+      default:
+        throw new Error('searchBy value not provided.');
+    }
+
+    for (let file of files) {
+      let song = await getSong(file.songId, t);
+      songs.push(song);
+    }
+
+    return songs;
+  }
+  catch (err) {
+    throw err.message;
+  }
+}
+
 const getAlbum = async (id, t) => {
   try {
     //Get album
@@ -603,6 +631,30 @@ const getSongRoute = async (req, res) => {
   }
 }
 
+const getFile = async (req, res) => {
+  const t = await db.transaction();
+
+  try {
+    if (!req.params.id) throw new Error('No file id included in request.');
+    const file = await db.query(`SELECT f.id, f.name, a.name AS artist, f.type, f.format, f.cid, f.tags, f.info FROM files AS f JOIN artists AS a ON a.id = f."artistId" WHERE f.id = ${req.params.id}`, { type: Sequelize.QueryTypes.SELECT, transaction: t });
+
+    await t.commit();
+    return res.json({
+      type: 'success',
+      payload: file[0]
+    });
+  }
+  catch (err) {
+    await t.rollback();
+    console.error(err);
+    return res.json({
+      type: 'error',
+      err: err.message
+    });
+  }
+}
+
+
 const uploadTimeout = (res, cid, timeout) => {
   return setTimeout(async () => {
     try {
@@ -735,7 +787,7 @@ const postSearch = async (req, res) => {
         payload = await getArtistsBySearch(req.body, t);
         break;
       case 'files':
-        payload = await getAlbumsBySearch(req.body, t);
+        payload = await getFilesBySearch(req.body, t);
         break;
       default:
         throw new Error('Search category not provided.');
@@ -881,6 +933,7 @@ module.exports = {
   getFeed,
   getArtist,
   getSongRoute,
+  getFile,
   postUpload,
   postComment,
   postPinned,
