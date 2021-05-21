@@ -159,10 +159,21 @@ const getAlbum = async (id, t) => {
   }
 }
 
-const getAlbumsBySearch = async (searchQuery, t) => {
+const getAlbumsBySearch = async (payload, t) => {
   try {
+    let albums;
+
     //Get albums
-    const albums = await db.query(`SELECT al.id, al.title, ar.name AS artist,  al.cid, al.tags, al.description FROM albums AS al JOIN artists AS ar ON ar.id = al."artistId" WHERE al.title LIKE '%${searchQuery}%' ORDER BY al.id DESC`, { type: Sequelize.QueryTypes.SELECT, transaction: t });
+    switch (payload.searchBy) {
+      case 'title':
+        albums = await db.query(`SELECT al.id, al.title, ar.name AS artist,  al.cid, al.tags, al.description FROM albums AS al JOIN artists AS ar ON ar.id = al."artistId" WHERE al.title LIKE '%${payload.searchQuery}%' ORDER BY al.id DESC`, { type: Sequelize.QueryTypes.SELECT, transaction: t });
+        break;
+      case 'tags':
+        albums = await db.query(`SELECT al.id, al.title, ar.name AS artist,  al.cid, al.tags, al.description FROM albums AS al JOIN artists AS ar ON ar.id = al."artistId" WHERE '${payload.searchQuery}' = ANY(al.tags) ORDER BY al.id DESC`, { type: Sequelize.QueryTypes.SELECT, transaction: t });
+        break;
+      default:
+        throw new Error('searchBy value not provided.');
+    }
 
     //Get songs
     for (let album of albums) {
