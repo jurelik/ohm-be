@@ -142,7 +142,7 @@ const getFilesBySearch = async (payload, t) => {
     let files;
 
     switch (payload.searchBy) {
-      case 'name':
+      case 'title':
         files = await db.query(`SELECT id, "songId" FROM files WHERE name LIKE '%${payload.searchQuery}%' AND "fileId" IS NULL`, { type: Sequelize.QueryTypes.SELECT, transaction: t });
         break;
       case 'tags':
