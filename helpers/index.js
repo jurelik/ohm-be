@@ -601,6 +601,15 @@ const getArtist = async (req, res) => {
 const getArtistsBySearch = async (payload, t) => {
   try {
     const artists = await db.query(`SELECT id, name, location FROM artists WHERE name LIKE '%${payload.searchQuery}%'`, { type: Sequelize.QueryTypes.SELECT, transaction: t });
+
+    for (let artist of artists) {
+      //Check if user is following the artist
+      const following = await db.query(`SELECT id FROM follows WHERE "followerId" = ${payload.artistId} AND "followingId" = ${artist.id}`, { type: Sequelize.QueryTypes.SELECT, transaction: t });
+
+      if (following.length === 1) artist.following = true;
+      else artist.following = false;
+    }
+
     return artists;
   }
   catch (err) {
@@ -771,6 +780,7 @@ const postPinned = async (req, res) => {
 
 const postSearch = async (req, res) => {
   const t = await db.transaction();
+  const _payload = initialisePayload(req);
   let payload;
 
   try {
@@ -778,16 +788,16 @@ const postSearch = async (req, res) => {
 
     switch (req.body.searchCategory) {
       case 'songs':
-        payload = await getSongsBySearch(req.body, t);
+        payload = await getSongsBySearch(_payload, t);
         break;
       case 'albums':
-        payload = await getAlbumsBySearch(req.body, t);
+        payload = await getAlbumsBySearch(_payload, t);
         break;
       case 'artists':
-        payload = await getArtistsBySearch(req.body, t);
+        payload = await getArtistsBySearch(_payload, t);
         break;
       case 'files':
-        payload = await getFilesBySearch(req.body, t);
+        payload = await getFilesBySearch(_payload.body, t);
         break;
       default:
         throw new Error('Search category not provided.');
