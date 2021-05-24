@@ -608,6 +608,8 @@ const getArtistsBySearch = async (payload, t) => {
 
       if (following.length === 1) artist.following = true;
       else artist.following = false;
+
+      artist.type = 'artist'; //Include type information
     }
 
     return artists;
