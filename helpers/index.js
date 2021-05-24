@@ -799,7 +799,7 @@ const postSearch = async (req, res) => {
         payload = await getArtistsBySearch(_payload, t);
         break;
       case 'files':
-        payload = await getFilesBySearch(_payload.body, t);
+        payload = await getFilesBySearch(_payload, t);
         break;
       default:
         throw new Error('Search category not provided.');
