@@ -46,7 +46,7 @@ const getSong = async (id, t) => {
     //Get data
     const song = await db.query(`SELECT s.id, s.title, a.name AS artist, s."albumId" AS "albumId", s.format, s.cid, s.tags FROM songs AS s JOIN artists AS a ON a.id = s."artistId" WHERE s.id = ${id}`, { type: Sequelize.QueryTypes.SELECT, transaction: t });
     const files = await getFiles(id, t);
-    const comments = await db.query(`SELECT c.id, c.content, a.name AS artist FROM comments AS c JOIN artists AS a ON a.id = c."artistId" WHERE "songId" = ${id} ORDER BY c.id DESC`, { type: Sequelize.QueryTypes.SELECT, transaction: t });
+    const comments = await getComments(id, t);
 
     //Append additional data to song
     song[0].type = 'song';
@@ -71,7 +71,7 @@ const getSongsByCID = async (cids, t) => {
 
     for (let song of songs) {
       const files = await getFiles(song.id, t);
-      const comments = await db.query(`SELECT c.id, c.content, a.name AS artist FROM comments AS c JOIN artists AS a ON a.id = c."artistId" WHERE "songId" = ${song.id} ORDER BY c.id DESC`, { type: Sequelize.QueryTypes.SELECT, transaction: t });
+      const comments = await getComments(song.id, t);
 
       //Append additional data to song
       song.type = 'song';
@@ -103,7 +103,7 @@ const getSongsBySearch = async (payload, t) => {
 
     for (let song of songs) {
       const files = await getFiles(song.id, t);
-      const comments = await db.query(`SELECT c.id, c.content, a.name AS artist FROM comments AS c JOIN artists AS a ON a.id = c."artistId" WHERE "songId" = ${song.id} ORDER BY c.id DESC`, { type: Sequelize.QueryTypes.SELECT, transaction: t });
+      const comments = await getComments(song.id, t);
 
       //Append additional data to song
       song.type = 'song';
@@ -303,6 +303,16 @@ const addFile = async (data, t) => {
       await db.query(`INSERT INTO files (type, "songId", "artistId", "fileId", "createdAt", "updatedAt") VALUES ('internal', ${data.songId}, ${original[0].artistId}, ${data.file.id}, NOW(), NOW())`, { type: Sequelize.QueryTypes.INSERT, transaction: t });
     }
     else await db.query(`INSERT INTO files (name, type, format, cid, tags, info, "songId", "artistId", "createdAt", "updatedAt") VALUES ('${data.file.name}', '${data.file.type}', '${data.file.format}', '${data.file.cid}', ARRAY [${stringifiedTags}], ${data.file.info ? `'${data.file.info}'` : 'NULL'}, ${data.songId}, ${data.artistId}, NOW(), NOW())`, { type: Sequelize.QueryTypes.INSERT, transaction: t });
+  }
+  catch (err) {
+    throw err;
+  }
+}
+
+const getComments = async (id, t) => {
+  try {
+    const comments = await db.query(`SELECT c.id, c.content, a.name AS artist FROM comments AS c JOIN artists AS a ON a.id = c."artistId" WHERE "songId" = ${id} ORDER BY c.id DESC`, { type: Sequelize.QueryTypes.SELECT, transaction: t });
+    return comments;
   }
   catch (err) {
     throw err;
