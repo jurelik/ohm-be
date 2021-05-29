@@ -97,6 +97,16 @@ app.post('/api/changepassword', express.json(), (req, res) => {
   helpers.postChangePassword(req, res);
 });
 
+app.post('/api/changelocation', express.json(), (req, res) => {
+  if (!helpers.userAuthenticated(req, res)) return;
+  helpers.postChangeLocation(req, res);
+});
+
+app.post('/api/changebio', express.json(), (req, res) => {
+  if (!helpers.userAuthenticated(req, res)) return;
+  helpers.postChangeBio(req, res);
+});
+
 app.get('/api/logout', (req, res) => {
   if (!helpers.userAuthenticated(req, res)) return;
   helpers.getLogout(req, res);

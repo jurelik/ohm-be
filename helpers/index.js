@@ -931,6 +931,54 @@ const postChangePassword = async (req, res) => {
   }
 }
 
+const postChangeLocation = async (req, res) => {
+  const t = await db.transaction();
+
+  try {
+    if (Object.keys(req.body).length === 0) throw new Error('No payload included in request.');
+    const payload = initialisePayload(req); //Initialise payload
+
+    await db.query(`UPDATE artists SET location = '${payload.location}' WHERE id = ${payload.artistId}`, { type: Sequelize.QueryTypes.UPDATE, transaction: t }); //Add submission
+
+    await t.commit();
+    return res.json({
+      type: 'success'
+    });
+  }
+  catch (err) {
+    await t.rollback();
+    console.error(err);
+    return res.json({
+      type: 'error',
+      err: err.message
+    });
+  }
+}
+
+const postChangeBio = async (req, res) => {
+  const t = await db.transaction();
+
+  try {
+    if (Object.keys(req.body).length === 0) throw new Error('No payload included in request.');
+    const payload = initialisePayload(req); //Initialise payload
+
+    await db.query(`UPDATE artists SET bio = '${payload.bio}' WHERE id = ${payload.artistId}`, { type: Sequelize.QueryTypes.UPDATE, transaction: t }); //Add submission
+
+    await t.commit();
+    return res.json({
+      type: 'success'
+    });
+  }
+  catch (err) {
+    await t.rollback();
+    console.error(err);
+    return res.json({
+      type: 'error',
+      err: err.message
+    });
+  }
+}
+
 const getLogout = async (req, res) => {
   try {
     await req.session.destroy();
@@ -965,5 +1013,7 @@ module.exports = {
   getFollow,
   getUnfollow,
   postChangePassword,
+  postChangeLocation,
+  postChangeBio,
   getLogout
 }
