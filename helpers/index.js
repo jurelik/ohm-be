@@ -797,6 +797,7 @@ const postSearch = async (req, res) => {
 
   try {
     if (Object.keys(req.body).length === 0) throw new Error('No payload included in request.');
+    if (req.body.searchQuery.length === 0) throw new Error('The search query is empty.');
 
     switch (req.body.searchCategory) {
       case 'songs':
@@ -826,7 +827,7 @@ const postSearch = async (req, res) => {
     console.error(err);
     return res.json({
       type: 'error',
-      err
+      err: err.message
     });
   }
 }
