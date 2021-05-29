@@ -937,6 +937,7 @@ const postChangeLocation = async (req, res) => {
   try {
     if (Object.keys(req.body).length === 0) throw new Error('No payload included in request.');
     const payload = initialisePayload(req); //Initialise payload
+    if (!payload.location || typeof payload.location !== 'string') throw new Error ('No location included in request.');
 
     await db.query(`UPDATE artists SET location = '${payload.location}' WHERE id = ${payload.artistId}`, { type: Sequelize.QueryTypes.UPDATE, transaction: t }); //Add submission
 
@@ -961,6 +962,7 @@ const postChangeBio = async (req, res) => {
   try {
     if (Object.keys(req.body).length === 0) throw new Error('No payload included in request.');
     const payload = initialisePayload(req); //Initialise payload
+    if (!payload.bio || typeof payload.bio !== 'string') throw new Error ('No bio included in request.');
 
     await db.query(`UPDATE artists SET bio = '${payload.bio}' WHERE id = ${payload.artistId}`, { type: Sequelize.QueryTypes.UPDATE, transaction: t }); //Add submission
 
