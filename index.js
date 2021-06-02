@@ -37,9 +37,9 @@ app.post('/api/latest', express.json(), (req, res) => {
   helpers.postLatest(req, res);
 });
 
-app.get('/api/feed', (req, res) => {
+app.post('/api/feed', express.json(), (req, res) => {
   if (!helpers.userAuthenticated(req, res)) return;
-  helpers.getFeed(req, res);
+  helpers.postFeed(req, res);
 });
 
 app.get('/api/artist/:name', (req, res) => {

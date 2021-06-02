@@ -527,12 +527,14 @@ const postLatest = async (req, res) => {
   }
 }
 
-const getFeed = async (req, res) => {
+const postFeed = async (req, res) => {
   const t = await db.transaction();
 
   try {
     const a = [];
-    const submissions = await db.query(`SELECT "songId", "albumId" FROM submissions WHERE "artistId" IN (SELECT "followingId" FROM follows WHERE "followerId" = ${req.session.artistId}) OR "artistId" = ${req.session.artistId} ORDER BY "createdAt" DESC LIMIT 10`, { type: Sequelize.QueryTypes.SELECT, transaction: t });
+    let submissions;
+    if (req.body.loadMore) submissions = await db.query(`SELECT "songId", "albumId" FROM submissions WHERE "artistId" IN (SELECT "followingId" FROM follows WHERE "followerId" = ${req.session.artistId}) OR "artistId" = ${req.session.artistId} ORDER BY "createdAt" DESC LIMIT 2`, { type: Sequelize.QueryTypes.SELECT, transaction: t });
+    else submissions = await db.query(`SELECT "songId", "albumId" FROM submissions WHERE "artistId" IN (SELECT "followingId" FROM follows WHERE "followerId" = ${req.session.artistId}) OR "artistId" = ${req.session.artistId} ORDER BY "createdAt" DESC LIMIT 2`, { type: Sequelize.QueryTypes.SELECT, transaction: t });
 
     if (submissions.length > 0) {
       for (let submission of submissions) {
@@ -1008,7 +1010,7 @@ module.exports = {
   userAuthenticated,
   postLogin,
   postLatest,
-  getFeed,
+  postFeed,
   getArtist,
   getSongRoute,
   getFile,
