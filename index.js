@@ -32,9 +32,9 @@ app.post('/api/login', express.json(), (req, res) => {
   helpers.postLogin(req, res);
 });
 
-app.get('/api/latest', (req, res) => {
+app.post('/api/latest', express.json(), (req, res) => {
   if (!helpers.userAuthenticated(req, res)) return;
-  helpers.getLatest(req, res);
+  helpers.postLatest(req, res);
 });
 
 app.get('/api/feed', (req, res) => {

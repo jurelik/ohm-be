@@ -487,12 +487,17 @@ const postLogin = async (req, res) => {
   }
 }
 
-const getLatest = async (req, res) => {
+const postLatest = async (req, res) => {
   const t = await db.transaction();
 
   try {
     const a = [];
-    const submissions = await db.query(`SELECT "songId", "albumId" FROM submissions ORDER BY "createdAt" DESC LIMIT 10`, { type: Sequelize.QueryTypes.SELECT, transaction: t });
+    let submissions;
+
+    if (req.body.loadMore) submissions = await db.query(`SELECT "songId", "albumId" FROM submissions WHERE "createdAt" < (SELECT "createdAt" FROM submissions WHERE "${req.body.lastItem.type}Id" = ${req.body.lastItem.id}) ORDER BY "createdAt" DESC LIMIT 2`, { type: Sequelize.QueryTypes.SELECT, transaction: t });
+    else submissions = await db.query(`SELECT "songId", "albumId" FROM submissions ORDER BY "createdAt" DESC LIMIT 2`, { type: Sequelize.QueryTypes.SELECT, transaction: t });
+
+    if (submissions.length === 0 && req.body.loadMore) throw new Error('Last item reached.'); //Throw error if no more songs/albums can be loaded
 
     for (let submission of submissions) {
       if (submission.songId) {
@@ -1002,7 +1007,7 @@ module.exports = {
   initDB,
   userAuthenticated,
   postLogin,
-  getLatest,
+  postLatest,
   getFeed,
   getArtist,
   getSongRoute,
