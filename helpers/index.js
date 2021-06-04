@@ -92,14 +92,16 @@ const getSongsBySearch = async (payload, t) => {
 
     switch (payload.searchBy) {
       case 'title':
-        songs = await db.query(`SELECT s.id, s.title, a.name AS artist, s."albumId" AS "albumId", s.format, s.cid, s.tags FROM songs AS s JOIN artists AS a ON a.id = s."artistId" WHERE s.title LIKE '%${payload.searchQuery}%' AND s."albumId" IS NULL ${payload.loadMore ? `AND s."createdAt" < (SELECT "createdAt" FROM songs WHERE id = ${payload.lastItem.id})` : ''} ORDER BY s.id DESC LIMIT 1`, { type: Sequelize.QueryTypes.SELECT, transaction: t });
+        songs = await db.query(`SELECT s.id, s.title, a.name AS artist, s."albumId" AS "albumId", s.format, s.cid, s.tags FROM songs AS s JOIN artists AS a ON a.id = s."artistId" WHERE s.title LIKE '%${payload.searchQuery}%' AND s."albumId" IS NULL ${payload.loadMore ? `AND s.id <${payload.lastItem.id}` : ''} ORDER BY s.id DESC LIMIT 1`, { type: Sequelize.QueryTypes.SELECT, transaction: t });
         break;
       case 'tags':
-        songs = await db.query(`SELECT s.id, s.title, a.name AS artist, s."albumId" AS "albumId", s.format, s.cid, s.tags FROM songs AS s JOIN artists AS a ON a.id = s."artistId" WHERE '${payload.searchQuery}' = ANY(s.tags) AND s."albumId" IS NULL ${payload.loadMore ? `AND s."createdAt" < (SELECT "createdAt" FROM songs WHERE id = ${payload.lastItem.id})` : ''} ORDER BY s.id DESC LIMIT 1`, { type: Sequelize.QueryTypes.SELECT, transaction: t });
+        songs = await db.query(`SELECT s.id, s.title, a.name AS artist, s."albumId" AS "albumId", s.format, s.cid, s.tags FROM songs AS s JOIN artists AS a ON a.id = s."artistId" WHERE '${payload.searchQuery}' = ANY(s.tags) AND s."albumId" IS NULL ${payload.loadMore ? `AND s.id < ${payload.lastItem.id}` : ''} ORDER BY s.id DESC LIMIT 1`, { type: Sequelize.QueryTypes.SELECT, transaction: t });
         break;
       default:
         throw new Error('searchBy value not provided.');
     }
+
+    if (payload.loadMore && songs.length === 0) throw new Error('Last item reached.');
 
     for (let song of songs) {
       const files = await getFiles(song.id, t);
@@ -114,7 +116,7 @@ const getSongsBySearch = async (payload, t) => {
     return songs;
   }
   catch (err) {
-    throw err.message;
+    throw err;
   }
 }
 
@@ -152,6 +154,8 @@ const getFilesBySearch = async (payload, t) => {
         throw new Error('searchBy value not provided.');
     }
 
+    if (payload.loadMore && files.length === 0) throw new Error('Last item reached.');
+
     for (let file of files) {
       let song = await getSong(file.songId, t);
       songs.push(song);
@@ -160,7 +164,7 @@ const getFilesBySearch = async (payload, t) => {
     return songs;
   }
   catch (err) {
-    throw err.message;
+    throw err;
   }
 }
 
@@ -194,14 +198,16 @@ const getAlbumsBySearch = async (payload, t) => {
     //Get albums
     switch (payload.searchBy) {
       case 'title':
-        albums = await db.query(`SELECT al.id, al.title, ar.name AS artist,  al.cid, al.tags, al.description FROM albums AS al JOIN artists AS ar ON ar.id = al."artistId" WHERE al.title LIKE '%${payload.searchQuery}%' ${payload.loadMore ? `AND al."createdAt" < (SELECT "createdAt" FROM albums WHERE id = ${payload.lastItem.id})` : ''} ORDER BY al.id DESC LIMIT 1`, { type: Sequelize.QueryTypes.SELECT, transaction: t });
+        albums = await db.query(`SELECT al.id, al.title, ar.name AS artist,  al.cid, al.tags, al.description FROM albums AS al JOIN artists AS ar ON ar.id = al."artistId" WHERE al.title LIKE '%${payload.searchQuery}%' ${payload.loadMore ? `AND al.id < ${payload.lastItem.id}` : ''} ORDER BY al.id DESC LIMIT 1`, { type: Sequelize.QueryTypes.SELECT, transaction: t });
         break;
       case 'tags':
-        albums = await db.query(`SELECT al.id, al.title, ar.name AS artist,  al.cid, al.tags, al.description FROM albums AS al JOIN artists AS ar ON ar.id = al."artistId" WHERE '${payload.searchQuery}' = ANY(al.tags) ${payload.loadMore ? `AND al."createdAt" < (SELECT "createdAt" FROM albums WHERE id = ${payload.lastItem.id})` : ''} ORDER BY al.id DESC LIMIT 1`, { type: Sequelize.QueryTypes.SELECT, transaction: t });
+        albums = await db.query(`SELECT al.id, al.title, ar.name AS artist,  al.cid, al.tags, al.description FROM albums AS al JOIN artists AS ar ON ar.id = al."artistId" WHERE '${payload.searchQuery}' = ANY(al.tags) ${payload.loadMore ? `AND al.id < ${payload.lastItem.id}` : ''} ORDER BY al.id DESC LIMIT 1`, { type: Sequelize.QueryTypes.SELECT, transaction: t });
         break;
       default:
         throw new Error('searchBy value not provided.');
     }
+
+    if (payload.loadMore && albums.length === 0) throw new Error('Last item reached.');
 
     //Get songs
     for (let album of albums) {
@@ -220,7 +226,7 @@ const getAlbumsBySearch = async (payload, t) => {
     return albums;
   }
   catch (err) {
-    throw err.message;
+    throw err;
   }
 }
 
@@ -625,6 +631,8 @@ const getArtistsBySearch = async (payload, t) => {
     //const artists = await db.query(`SELECT id, name, location FROM artists WHERE name LIKE '%${payload.searchQuery}%'`, { type: Sequelize.QueryTypes.SELECT, transaction: t });
     const artists = await db.query(`SELECT id, name, location FROM artists WHERE name LIKE '%${payload.searchQuery}%' ${payload.loadMore ? `AND id < ${payload.lastItem.id}` : ''} LIMIT 1`, { type: Sequelize.QueryTypes.SELECT, transaction: t });
 
+    if (payload.loadMore && artists.length === 0) throw new Error('Last item reached.');
+
     for (let artist of artists) {
       //Check if user is following the artist
       const following = await db.query(`SELECT id FROM follows WHERE "followerId" = ${payload.artistId} AND "followingId" = ${artist.id}`, { type: Sequelize.QueryTypes.SELECT, transaction: t });
@@ -638,7 +646,7 @@ const getArtistsBySearch = async (payload, t) => {
     return artists;
   }
   catch (err) {
-    throw err.message;
+    throw err;
   }
 }
 
