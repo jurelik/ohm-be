@@ -622,7 +622,8 @@ const getArtist = async (req, res) => {
 
 const getArtistsBySearch = async (payload, t) => {
   try {
-    const artists = await db.query(`SELECT id, name, location FROM artists WHERE name LIKE '%${payload.searchQuery}%'`, { type: Sequelize.QueryTypes.SELECT, transaction: t });
+    //const artists = await db.query(`SELECT id, name, location FROM artists WHERE name LIKE '%${payload.searchQuery}%'`, { type: Sequelize.QueryTypes.SELECT, transaction: t });
+    const artists = await db.query(`SELECT id, name, location FROM artists WHERE name LIKE '%${payload.searchQuery}%' ${payload.loadMore ? `AND id < ${payload.lastItem.id}` : ''} LIMIT 1`, { type: Sequelize.QueryTypes.SELECT, transaction: t });
 
     for (let artist of artists) {
       //Check if user is following the artist
