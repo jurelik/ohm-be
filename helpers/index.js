@@ -92,10 +92,10 @@ const getSongsBySearch = async (payload, t) => {
 
     switch (payload.searchBy) {
       case 'title':
-        songs = await db.query(`SELECT s.id, s.title, a.name AS artist, s."albumId" AS "albumId", s.format, s.cid, s.tags FROM songs AS s JOIN artists AS a ON a.id = s."artistId" WHERE s.title LIKE '%${payload.searchQuery}%' AND s."albumId" IS NULL ORDER BY s.id DESC`, { type: Sequelize.QueryTypes.SELECT, transaction: t });
+        songs = await db.query(`SELECT s.id, s.title, a.name AS artist, s."albumId" AS "albumId", s.format, s.cid, s.tags FROM songs AS s JOIN artists AS a ON a.id = s."artistId" WHERE s.title LIKE '%${payload.searchQuery}%' AND s."albumId" IS NULL ${payload.loadMore ? `AND s."createdAt" < (SELECT "createdAt" FROM songs WHERE id = ${payload.lastItem.id})` : ''} ORDER BY s.id DESC LIMIT 1`, { type: Sequelize.QueryTypes.SELECT, transaction: t });
         break;
       case 'tags':
-        songs = await db.query(`SELECT s.id, s.title, a.name AS artist, s."albumId" AS "albumId", s.format, s.cid, s.tags FROM songs AS s JOIN artists AS a ON a.id = s."artistId" WHERE '${payload.searchQuery}' = ANY(s.tags) AND s."albumId" IS NULL ORDER BY s.id DESC`, { type: Sequelize.QueryTypes.SELECT, transaction: t });
+        songs = await db.query(`SELECT s.id, s.title, a.name AS artist, s."albumId" AS "albumId", s.format, s.cid, s.tags FROM songs AS s JOIN artists AS a ON a.id = s."artistId" WHERE '${payload.searchQuery}' = ANY(s.tags) AND s."albumId" IS NULL ${payload.loadMore ? `AND s."createdAt" < (SELECT "createdAt" FROM songs WHERE id = ${payload.lastItem.id})` : ''} ORDER BY s.id DESC LIMIT 1`, { type: Sequelize.QueryTypes.SELECT, transaction: t });
         break;
       default:
         throw new Error('searchBy value not provided.');
