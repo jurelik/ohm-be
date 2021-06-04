@@ -194,10 +194,10 @@ const getAlbumsBySearch = async (payload, t) => {
     //Get albums
     switch (payload.searchBy) {
       case 'title':
-        albums = await db.query(`SELECT al.id, al.title, ar.name AS artist,  al.cid, al.tags, al.description FROM albums AS al JOIN artists AS ar ON ar.id = al."artistId" WHERE al.title LIKE '%${payload.searchQuery}%' ORDER BY al.id DESC`, { type: Sequelize.QueryTypes.SELECT, transaction: t });
+        albums = await db.query(`SELECT al.id, al.title, ar.name AS artist,  al.cid, al.tags, al.description FROM albums AS al JOIN artists AS ar ON ar.id = al."artistId" WHERE al.title LIKE '%${payload.searchQuery}%' ${payload.loadMore ? `AND al."createdAt" < (SELECT "createdAt" FROM albums WHERE id = ${payload.lastItem.id})` : ''} ORDER BY al.id DESC LIMIT 1`, { type: Sequelize.QueryTypes.SELECT, transaction: t });
         break;
       case 'tags':
-        albums = await db.query(`SELECT al.id, al.title, ar.name AS artist,  al.cid, al.tags, al.description FROM albums AS al JOIN artists AS ar ON ar.id = al."artistId" WHERE '${payload.searchQuery}' = ANY(al.tags) ORDER BY al.id DESC`, { type: Sequelize.QueryTypes.SELECT, transaction: t });
+        albums = await db.query(`SELECT al.id, al.title, ar.name AS artist,  al.cid, al.tags, al.description FROM albums AS al JOIN artists AS ar ON ar.id = al."artistId" WHERE '${payload.searchQuery}' = ANY(al.tags) ${payload.loadMore ? `AND al."createdAt" < (SELECT "createdAt" FROM albums WHERE id = ${payload.lastItem.id})` : ''} ORDER BY al.id DESC LIMIT 1`, { type: Sequelize.QueryTypes.SELECT, transaction: t });
         break;
       default:
         throw new Error('searchBy value not provided.');
