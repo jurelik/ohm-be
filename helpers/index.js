@@ -145,10 +145,10 @@ const getFilesBySearch = async (payload, t) => {
 
     switch (payload.searchBy) {
       case 'title':
-        files = await db.query(`SELECT id, "songId" FROM files WHERE name LIKE '%${payload.searchQuery}%' AND "fileId" IS NULL ${payload.loadMore ? `AND "createdAt" < (SELECT "createdAt" FROM songs WHERE id = ${payload.lastItem.id})` : ''} ORDER BY id DESC LIMIT 1`, { type: Sequelize.QueryTypes.SELECT, transaction: t });
+        files = await db.query(`SELECT DISTINCT "songId" FROM files WHERE name LIKE '%${payload.searchQuery}%' AND "fileId" IS NULL ${payload.loadMore ? `AND "createdAt" < (SELECT "createdAt" FROM songs WHERE id = ${payload.lastItem.id})` : ''} ORDER BY "songId" DESC LIMIT 2`, { type: Sequelize.QueryTypes.SELECT, transaction: t });
         break;
       case 'tags':
-        files = await db.query(`SELECT id, "songId" FROM files WHERE '${payload.searchQuery}' = ANY(tags) AND "fileId" IS NULL ${payload.loadMore ? `AND "createdAt" < (SELECT "createdAt" FROM songs WHERE id = ${payload.lastItem.id})` : ''} ORDER BY id DESC LIMIT 1`, { type: Sequelize.QueryTypes.SELECT, transaction: t });
+        files = await db.query(`SELECT DISTINCT "songId" FROM files WHERE '${payload.searchQuery}' = ANY(tags) AND "fileId" IS NULL ${payload.loadMore ? `AND "createdAt" < (SELECT "createdAt" FROM songs WHERE id = ${payload.lastItem.id})` : ''} ORDER BY "songId" DESC LIMIT 2`, { type: Sequelize.QueryTypes.SELECT, transaction: t });
         break;
       default:
         throw new Error('searchBy value not provided.');
