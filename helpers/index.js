@@ -67,7 +67,7 @@ const getSongsByCID = async (cids, t) => {
     if (!parsed) return [];
 
     //Get data
-    const songs = await db.query(`SELECT s.id, s.title, a.name AS artist, s."albumId" AS "albumId", s.format, s.cid, s.tags FROM songs AS s JOIN artists AS a ON a.id = s."artistId" WHERE s.cid IN (${parsed}) AND s."albumId" IS NULL ORDER BY s.id DESC`, { type: Sequelize.QueryTypes.SELECT, transaction: t });
+    const songs = await db.query(`SELECT s.id, s.title, a.name AS artist, s."albumId" AS "albumId", s.format, s.cid, s.tags, s."createdAt" FROM songs AS s JOIN artists AS a ON a.id = s."artistId" WHERE s.cid IN (${parsed}) AND s."albumId" IS NULL ORDER BY s.id DESC`, { type: Sequelize.QueryTypes.SELECT, transaction: t });
 
     for (let song of songs) {
       const files = await getFiles(song.id, t);
@@ -230,14 +230,13 @@ const getAlbumsBySearch = async (payload, t) => {
   }
 }
 
-const getAlbumsByArtistAndTitle = async (payload, t) => {
+const getAlbumsByCID = async (cids, t) => {
   try {
-    //Parse array into string
-    let parsed = stringifyWhereInAlbum(payload);
+    let parsed = stringifyWhereIn(cids);
     if (!parsed) return [];
 
     //Get album
-    const albums = await db.query(`SELECT al.id, al.title, ar.name AS artist,  al.cid, al.tags, al.description FROM albums AS al JOIN artists AS ar ON ar.id = al."artistId" WHERE (ar.name, al.title) IN (${parsed}) ORDER BY al.id DESC`, { type: Sequelize.QueryTypes.SELECT, transaction: t });
+    const albums = await db.query(`SELECT al.id, al.title, ar.name AS artist, al.cid, al.tags, al.description, al."createdAt" FROM albums AS al JOIN artists AS ar ON ar.id = al."artistId" WHERE al.cid IN (${parsed}) ORDER BY al.id DESC`, { type: Sequelize.QueryTypes.SELECT, transaction: t });
 
     //Get songs
     for (let album of albums) {
@@ -789,16 +788,16 @@ const postPinned = async (req, res) => {
     if (Object.keys(req.body).length === 0) throw new Error('No payload included in request.');
 
     const payload = initialisePayload(req); //Initialise payload
-    const albums = await getAlbumsByArtistAndTitle(payload.albums, t);
+    const albums = await getAlbumsByCID(payload.albums, t);
     const songs = await getSongsByCID(payload.songs, t);
+    const _payload = albums.concat(songs).sort((a, b) => {
+      return b.createdAt - a.createdAt;
+    });
 
     await t.commit();
     return res.json({
       type: 'success',
-      payload: {
-        albums,
-        songs
-      }
+      payload: _payload
     });
   }
   catch (err) {
