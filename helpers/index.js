@@ -439,11 +439,12 @@ const removePin = async (cid) => {
   }
 }
 
-const uploadInterval = (res, cid) => {
+const uploadInterval = (res, cid, progress) => {
   return setInterval(async () => {
     try {
       const stat = await ipfs.files.stat(`/ipfs/${cid}`, { withLocal: true, timeout: 2000 });
       const percentage = Math.round(stat.sizeLocal / stat.cumulativeSize * 100);
+      progress = percentage;
       res.write(`${percentage}`);
     }
     catch (err) {
@@ -451,6 +452,20 @@ const uploadInterval = (res, cid) => {
     }
   }, 1000)
 }
+
+const progressInterval = (progress, controller) => { //Checks if any progress has been made in the last n seconds
+  let prevProgress = 0;
+  let count = 0;
+
+  return setInterval(() => {
+    if (progress === prevProgress) count++;
+    else count = 0;
+
+    if (count >= 10) return controller.abort('Timed out.');
+    prevProgress = progress;
+  }, 1000);
+}
+
 
 //Route handlers
 const postLogin = async (req, res) => {
@@ -695,25 +710,12 @@ const getFile = async (req, res) => {
   }
 }
 
-
-const uploadTimeout = (res, cid, timeout) => {
-  return setTimeout(async () => {
-    try {
-      const stat = await ipfs.files.stat(`/ipfs/${cid}`, { withLocal: true, timeout: 2000 });
-      const percentage = Math.round(stat.sizeLocal / stat.cumulativeSize * 100);
-      res.write(`${percentage}`);
-      timeout = uploadTimeout(res, cid);
-    }
-    catch (err) {
-      console.log(err.message)
-      timeout = uploadTimeout(res, cid);
-    }
-  }, 1000);
-}
-
 const postUpload = async (req, res) => {
   const t = await db.transaction();
-  let interval;
+  const controller = new AbortController();
+  let progress = 0;
+  let uInterval;
+  let pInterval;
 
   try {
     if (Object.keys(req.body).length === 0) throw new Error('No payload included in request.');
@@ -723,7 +725,7 @@ const postUpload = async (req, res) => {
 
     if (!payload.artistId) throw new Error('Session is missing artist data. Try to login again.'); //Check for missing data
 
-    process.env.NODE_ENV === 'production' ? await ipfs.swarm.connect(payload.multiaddr) : null; //Try to init connection to node
+    process.env.NODE_ENV === 'production' ? await ipfs.swarm.connect(payload.multiaddr, { signal: controller.signal, timeout: 30000 }) : null; //Try to init connection to node
 
     if (payload.album) {
       const albumId = await addAlbum(payload, t); //Add album
@@ -734,9 +736,11 @@ const postUpload = async (req, res) => {
       await db.query(`INSERT INTO submissions (type, "artistId", "songId",  "createdAt", "updatedAt") VALUES ('song', ${payload.artistId}, ${songId}, NOW(), NOW())`, { type: Sequelize.QueryTypes.INSERT, transaction: t }); //Add submission
     }
 
-    interval = uploadInterval(res, cid); //Send progress every second
-    await ipfs.pin.add(`/ipfs/${cid}`);
-    clearInterval(interval); //Stop sending progress
+    uInterval = uploadInterval(res, cid, progress); //Send progress every second
+    pInterval = progressInterval(progress, controller); //Check if progress is being made
+    await ipfs.pin.add(`/ipfs/${cid}`, { signal: controller.signal });
+    clearInterval(uInterval); //Stop sending progress
+    clearInterval(pInterval); //Stop checking for progress
 
     await t.commit();
     return res.end(JSON.stringify({
@@ -745,7 +749,8 @@ const postUpload = async (req, res) => {
   }
   catch (err) {
     await t.rollback();
-    clearInterval(interval);
+    clearInterval(uInterval); //Stop sending progress
+    clearInterval(pInterval); //Stop checking for progress
     console.error(err);
     return res.end(JSON.stringify({
       type: 'error',
