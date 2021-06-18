@@ -462,7 +462,7 @@ const progressInterval = (progress, controller) => { //Checks if any progress ha
     if (progress === prevProgress) count++;
     else count = 0;
 
-    if (count >= 10) return controller.abort('Timed out.');
+    if (count >= 60) return controller.abort('Timed out.');
     prevProgress = progress;
   }, 1000);
 }
