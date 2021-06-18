@@ -444,8 +444,7 @@ const uploadInterval = (res, cid, progress) => {
     try {
       const stat = await ipfs.files.stat(`/ipfs/${cid}`, { withLocal: true, timeout: 2000 });
       const percentage = Math.round(stat.sizeLocal / stat.cumulativeSize * 100);
-      console.log('percentage: ' + percentage)
-      progress = percentage;
+      progress.value = percentage;
       res.write(`${percentage}`);
     }
     catch (err) {
@@ -459,12 +458,12 @@ const progressInterval = (progress, controller) => { //Checks if any progress ha
   let count = 0;
 
   return setInterval(() => {
-    console.log(progress + '|' + prevProgress)
-    if (progress === prevProgress) count++;
+    console.log(progress.value + '|' + prevProgress)
+    if (progress.value === prevProgress) count++;
     else count = 0;
 
-    if (count >= 60) return controller.abort('Timed out.');
-    prevProgress = progress;
+    if (count >= 30) return controller.abort('Timed out.');
+    prevProgress = progress.value;
   }, 1000);
 }
 
@@ -715,7 +714,7 @@ const getFile = async (req, res) => {
 const postUpload = async (req, res) => {
   const t = await db.transaction();
   const controller = new AbortController();
-  let progress = 0;
+  const progress = { value: 0 };
   let uInterval;
   let pInterval;
 
