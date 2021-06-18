@@ -444,6 +444,7 @@ const uploadInterval = (res, cid, progress) => {
     try {
       const stat = await ipfs.files.stat(`/ipfs/${cid}`, { withLocal: true, timeout: 2000 });
       const percentage = Math.round(stat.sizeLocal / stat.cumulativeSize * 100);
+      console.log('percentage: ' + percentage)
       progress = percentage;
       res.write(`${percentage}`);
     }
