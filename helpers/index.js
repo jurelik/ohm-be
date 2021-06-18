@@ -725,7 +725,7 @@ const postUpload = async (req, res) => {
 
     if (!payload.artistId) throw new Error('Session is missing artist data. Try to login again.'); //Check for missing data
 
-    process.env.NODE_ENV === 'production' ? await ipfs.swarm.connect(payload.multiaddr, { signal: controller.signal, timeout: 30000 }) : null; //Try to init connection to node
+    if (process.env.NODE_ENV === 'production') await ipfs.swarm.connect(payload.multiaddr, { timeout: 30000 }); //Try to init connection to node
 
     if (payload.album) {
       const albumId = await addAlbum(payload, t); //Add album
