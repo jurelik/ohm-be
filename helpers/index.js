@@ -458,6 +458,7 @@ const progressInterval = (progress, controller) => { //Checks if any progress ha
   let count = 0;
 
   return setInterval(() => {
+    console.log(progress + '|' + prevProgress)
     if (progress === prevProgress) count++;
     else count = 0;
 
@@ -738,6 +739,7 @@ const postUpload = async (req, res) => {
 
     uInterval = uploadInterval(res, cid, progress); //Send progress every second
     pInterval = progressInterval(progress, controller); //Check if progress is being made
+    console.log('adding to ipfs')
     await ipfs.pin.add(`/ipfs/${cid}`, { signal: controller.signal });
     clearInterval(uInterval); //Stop sending progress
     clearInterval(pInterval); //Stop checking for progress
