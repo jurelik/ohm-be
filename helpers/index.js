@@ -714,7 +714,7 @@ const getFile = async (req, res) => {
 const postUpload = async (req, res) => {
   const t = await db.transaction();
   const controller = new AbortController();
-  const progress = { value: 0 };
+  const progress = { value: 0 }; //Keep track of upload progress
   let uInterval;
   let pInterval;
 
@@ -751,9 +751,13 @@ const postUpload = async (req, res) => {
   }
   catch (err) {
     await t.rollback();
+    await ipfs.pin.rm(`/ipfs/${cid}`, { recursive: true }); //Remove pin from IPFS
+    for await (const res of ipfs.repo.gc()) continue; //Garbage collect
+
     clearInterval(uInterval); //Stop sending progress
     clearInterval(pInterval); //Stop checking for progress
-    console.error(err);
+    console.error(err.message);
+
     return res.end(JSON.stringify({
       type: 'error',
       err: err.message
