@@ -739,7 +739,6 @@ const postUpload = async (req, res) => {
 
     uInterval = uploadInterval(res, cid, progress); //Send progress every second
     pInterval = progressInterval(progress, controller); //Check if progress is being made
-    console.log('adding to ipfs')
     await ipfs.pin.add(`/ipfs/${cid}`, { signal: controller.signal });
     clearInterval(uInterval); //Stop sending progress
     clearInterval(pInterval); //Stop checking for progress
@@ -751,7 +750,6 @@ const postUpload = async (req, res) => {
   }
   catch (err) {
     await t.rollback();
-    await ipfs.pin.rm(`/ipfs/${cid}`, { recursive: true }); //Remove pin from IPFS
     for await (const res of ipfs.repo.gc()) continue; //Garbage collect
 
     clearInterval(uInterval); //Stop sending progress
