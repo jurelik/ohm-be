@@ -720,8 +720,10 @@ const postUpload = async (req, res) => {
   let pInterval;
 
   try {
+    console.log('a')
     if (Object.keys(req.body).length === 0) throw new Error('No payload included in request.');
     if (currentlyUploading.includes(req.session.artistId)) throw new Error('Please wait for the current upload to finish.');
+    console.log('b')
 
     const payload = initialisePayload(req); //Initialise payload object
     const cid = payload.album ? payload.album.cid : payload.songs[0].cid;
@@ -753,8 +755,10 @@ const postUpload = async (req, res) => {
     }));
   }
   catch (err) {
+    console.log('c')
     await t.rollback();
-    for await (const res of ipfs.repo.gc()) continue; //Garbage collect
+    if (uInterval) for await (const res of ipfs.repo.gc()) continue; //Garbage collect ONLY IF ipfs.add was triggered (not if error was thrown before)
+    console.log('d')
 
     clearInterval(uInterval); //Stop sending progress
     clearInterval(pInterval); //Stop checking for progress
