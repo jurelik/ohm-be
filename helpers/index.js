@@ -4,6 +4,7 @@ const db = require('../db');
 const models = require('../models');
 const createClient = require('ipfs-http-client');
 const ipfs = createClient();
+const currentlyUploading = []; //Keep track of clients currently uploading to prevent double uploads.
 
 const initDB = () => {
   models.sequelize.sync().then(async () => {
@@ -720,6 +721,7 @@ const postUpload = async (req, res) => {
 
   try {
     if (Object.keys(req.body).length === 0) throw new Error('No payload included in request.');
+    if (currentlyUploading.includes(req.session.artistId)) throw new Error('Please wait for the current upload to finish.');
 
     const payload = initialisePayload(req); //Initialise payload object
     const cid = payload.album ? payload.album.cid : payload.songs[0].cid;
@@ -739,9 +741,11 @@ const postUpload = async (req, res) => {
 
     uInterval = uploadInterval(res, cid, progress); //Send progress every second
     pInterval = progressInterval(progress, controller); //Check if progress is being made
+    currentlyUploading.push(payload.artistId); //Add artistId to currentlyUploading
     await ipfs.pin.add(`/ipfs/${cid}`, { signal: controller.signal });
     clearInterval(uInterval); //Stop sending progress
     clearInterval(pInterval); //Stop checking for progress
+    currentlyUploading.splice(currentlyUploading.indexOf(payload.artistId), 1); //Delete artistId from currentlyUploading
 
     await t.commit();
     return res.end(JSON.stringify({
@@ -754,6 +758,7 @@ const postUpload = async (req, res) => {
 
     clearInterval(uInterval); //Stop sending progress
     clearInterval(pInterval); //Stop checking for progress
+    currentlyUploading.splice(currentlyUploading.indexOf(payload.artistId), 1); //Delete artistId from currentlyUploading
     console.error(err.message);
 
     return res.end(JSON.stringify({
