@@ -765,11 +765,11 @@ const postUpload = async (req, res) => {
   }
   catch (err) {
     await t.rollback();
-    if (uInterval) for await (const res of ipfs.repo.gc()) continue; //Garbage collect ONLY IF ipfs.add was triggered (not if error was thrown before)
-    if (uInterval) currentlyUploading.splice(currentlyUploading.indexOf(req.session.artistId), 1); //Delete artistId from currentlyUploading ONLY IF ipfs.add was triggered
-
     clearInterval(uInterval); //Stop sending progress
     console.error(err.message);
+
+    //if (uInterval) for await (const res of ipfs.repo.gc()) continue; //Garbage collect ONLY IF ipfs.add was triggered (not if error was thrown before)
+    if (uInterval) currentlyUploading.splice(currentlyUploading.indexOf(req.session.artistId), 1); //Delete artistId from currentlyUploading ONLY IF ipfs.add was triggered
 
     return res.end(JSON.stringify({
       type: 'error',
