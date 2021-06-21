@@ -443,7 +443,7 @@ const removePin = async (cid) => {
 const uploadInterval = (res, cid, progress) => {
   return setInterval(async () => {
     try {
-      const stat = await ipfs.files.stat(`/ipfs/${cid}`, { withLocal: true, timeout: 2000 });
+      const stat = await ipfs.files.stat(`/ipfs/${cid}`, { withLocal: true, timeout: 1000 });
       const percentage = Math.round(stat.sizeLocal / stat.cumulativeSize * 100);
       progress.value = percentage;
       res.write(`${percentage}`);
