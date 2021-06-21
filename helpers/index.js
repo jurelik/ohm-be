@@ -730,7 +730,7 @@ const postUpload = async (req, res) => {
   let uInterval;
 
   try {
-    console.log(`Currently uploading: ${currentlyUploading}`);
+    console.log(currentlyUploading);
     console.log(req.session.artistId);
     console.log(currentlyUploading.includes(req.session.artistId));
     if (Object.keys(req.body).length === 0) throw new Error('No payload included in request.');
@@ -766,9 +766,9 @@ const postUpload = async (req, res) => {
   catch (err) {
     await t.rollback();
     if (uInterval) for await (const res of ipfs.repo.gc()) continue; //Garbage collect ONLY IF ipfs.add was triggered (not if error was thrown before)
+    if (uInterval) currentlyUploading.splice(currentlyUploading.indexOf(req.session.artistId), 1); //Delete artistId from currentlyUploading ONLY IF ipfs.add was triggered
 
     clearInterval(uInterval); //Stop sending progress
-    currentlyUploading.splice(currentlyUploading.indexOf(req.session.artistId), 1); //Delete artistId from currentlyUploading
     console.error(err.message);
 
     return res.end(JSON.stringify({
