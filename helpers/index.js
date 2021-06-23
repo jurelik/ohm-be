@@ -446,7 +446,7 @@ const uploadInterval = (res, cid, progress, controller) => {
 
   return setInterval(async () => {
     try {
-      console.log(progress.value + '|' + prevProgress)
+      console.log(progress.value + '|' + prevProgress); //Delete this in prod
       if (progress.value === prevProgress) count++;
       else count = 0;
 
@@ -454,7 +454,7 @@ const uploadInterval = (res, cid, progress, controller) => {
       prevProgress = progress.value;
 
       //Get new progress
-      const stat = await ipfs.files.stat(`/ipfs/${cid}`, { withLocal: true, timeout: 1000 });
+      const stat = await ipfs.files.stat(`/ipfs/${cid}`, { withLocal: true, timeout: 900 });
       const percentage = Math.round(stat.sizeLocal / stat.cumulativeSize * 100);
       progress.value = percentage;
       res.write(`${percentage}`);
@@ -464,21 +464,6 @@ const uploadInterval = (res, cid, progress, controller) => {
     }
   }, 1000)
 }
-
-const progressInterval = (progress, controller) => { //Checks if any progress has been made in the last n seconds
-  let prevProgress = 0;
-  let count = 0;
-
-  return setInterval(() => {
-    console.log(progress.value + '|' + prevProgress)
-    if (progress.value === prevProgress) count++;
-    else count = 0;
-
-    if (count >= 30) return controller.abort('Timed out.');
-    prevProgress = progress.value;
-  }, 1000);
-}
-
 
 //Route handlers
 const postLogin = async (req, res) => {
@@ -728,11 +713,9 @@ const postUpload = async (req, res) => {
   const controller = new AbortController();
   const progress = { value: 0 }; //Keep track of upload progress
   let uInterval;
+  let uploadStarted = false; //Keep track of whether or not upload has started
 
   try {
-    console.log(currentlyUploading);
-    console.log(req.session.artistId);
-    console.log(currentlyUploading.includes(req.session.artistId));
     if (Object.keys(req.body).length === 0) throw new Error('No payload included in request.');
     if (currentlyUploading.includes(req.session.artistId)) throw new Error('Please wait for the current upload to finish.');
 
@@ -754,6 +737,7 @@ const postUpload = async (req, res) => {
 
     uInterval = uploadInterval(res, cid, progress, controller); //Send progress every second
     currentlyUploading.push(payload.artistId); //Add artistId to currentlyUploading
+    uploadStarted = true;
     await ipfs.pin.add(`/ipfs/${cid}`, { signal: controller.signal });
     clearInterval(uInterval); //Stop sending progress
     currentlyUploading.splice(currentlyUploading.indexOf(payload.artistId), 1); //Delete artistId from currentlyUploading
@@ -768,8 +752,8 @@ const postUpload = async (req, res) => {
     clearInterval(uInterval); //Stop sending progress
     console.error(err.message);
 
-    //if (uInterval) for await (const res of ipfs.repo.gc()) continue; //Garbage collect ONLY IF ipfs.add was triggered (not if error was thrown before)
-    if (uInterval) currentlyUploading.splice(currentlyUploading.indexOf(req.session.artistId), 1); //Delete artistId from currentlyUploading ONLY IF ipfs.add was triggered
+    //if (uploadStarted) for await (const res of ipfs.repo.gc()) continue; //Garbage collect ONLY IF ipfs.add was triggered (not if error was thrown before)
+    if (uploadStarted) currentlyUploading.splice(currentlyUploading.indexOf(req.session.artistId), 1); //Delete artistId from currentlyUploading ONLY IF upload has started
 
     return res.end(JSON.stringify({
       type: 'error',
