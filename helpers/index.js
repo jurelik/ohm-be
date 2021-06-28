@@ -464,31 +464,6 @@ const uploadTimeout = (data, progress) => {
   }, 1000)
 }
 
-const uploadInterval = (res, cid, progress, controller) => {
-  let prevProgress = 0;
-  let count = 0;
-
-  return setInterval(async () => {
-    try {
-      console.log(progress.value + '|' + prevProgress); //Delete this in prod
-      if (progress.value === prevProgress) count++;
-      else count = 0;
-
-      if (count >= 30) return controller.abort('Timed out.');
-      prevProgress = progress.value;
-
-      //Get new progress
-      const stat = await ipfs.files.stat(`/ipfs/${cid}`, { withLocal: true, timeout: 900 });
-      const percentage = Math.round(stat.sizeLocal / stat.cumulativeSize * 100);
-      progress.value = percentage;
-      res.write(`${percentage}`);
-    }
-    catch (err) {
-      console.log(err.message);
-    }
-  }, 1000)
-}
-
 //Route handlers
 const postLogin = async (req, res) => {
   if (req.session.authenticated) { //Check if session is already established
@@ -736,7 +711,7 @@ const postUpload = async (req, res) => {
   const t = await db.transaction();
   const controller = new AbortController();
   const progress = { value: 0 }; //Keep track of upload progress
-  let uInterval;
+  let uTimeout;
   let uploadStarted = false; //Keep track of whether or not upload has started
 
   try {
@@ -759,17 +734,18 @@ const postUpload = async (req, res) => {
       await db.query(`INSERT INTO submissions (type, "artistId", "songId",  "createdAt", "updatedAt") VALUES ('song', ${payload.artistId}, ${songId}, NOW(), NOW())`, { type: Sequelize.QueryTypes.INSERT, transaction: t }); //Add submission
     }
 
-    uInterval = uploadTimeout({
+    uTimeout = uploadTimeout({ //Send progress every second
       res,
       cid,
       controller,
       prevProgress: 0,
       count: 0
-    }, progress); //Send progress every second
+    }, progress);
+
     currentlyUploading.push(payload.artistId); //Add artistId to currentlyUploading
     uploadStarted = true;
     await ipfs.pin.add(`/ipfs/${cid}`, { signal: controller.signal });
-    clearTimeout(uInterval); //Stop sending progress
+    clearTimeout(uTimeout); //Stop sending progress
     currentlyUploading.splice(currentlyUploading.indexOf(payload.artistId), 1); //Delete artistId from currentlyUploading
 
     await t.commit();
@@ -779,7 +755,7 @@ const postUpload = async (req, res) => {
   }
   catch (err) {
     await t.rollback();
-    clearTimeout(uInterval); //Stop sending progress
+    clearTimeout(uTimeout); //Stop sending progress
     console.error(err.message);
 
     //if (uploadStarted) for await (const res of ipfs.repo.gc()) continue; //Garbage collect ONLY IF ipfs.add was triggered (not if error was thrown before)
