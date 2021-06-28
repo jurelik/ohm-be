@@ -778,6 +778,7 @@ const postComment = async (req, res) => {
     if (!payload.songId || !payload.content) throw new Error('Payload is missing data'); //Check for missing data
     if (!payload.artistId) throw new Error('Session is missing artist data. Try to login again.'); //Check for missing data
 
+    console.log(payload.content)
     await addComment(payload, t);
 
     await t.commit();
