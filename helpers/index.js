@@ -454,7 +454,7 @@ const uploadTimeout = (data, progress) => {
       const stat = await ipfs.files.stat(`/ipfs/${data.cid}`, { withLocal: true, timeout: 1000 });
       const percentage = Math.round(stat.sizeLocal / stat.cumulativeSize * 100);
       progress.value = percentage;
-      res.write(`${percentage}`);
+      data.res.write(`${percentage}`);
       uploadTimeout(data, progress);
     }
     catch (err) {
