@@ -444,7 +444,7 @@ const uploadTimeout = (data, progress) => {
   setTimeout(async () => {
     try {
       console.log(progress.value + '|' + data.prevProgress); //Delete this in prod
-      if (data.progress.value === data.prevProgress) data.count++;
+      if (progress.value === data.prevProgress) data.count++;
       else data.count = 0;
 
       if (data.count >= 30) return data.controller.abort('Timed out.');
