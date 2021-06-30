@@ -74,6 +74,7 @@ const getSongsByCID = async (cids, t) => {
 const getSongsBySearch = async (payload, t) => {
   try {
     let songs;
+    if (payload.loadMore && !payload.lastItem) throw new Error('Last item reached.'); //If user clicks load more with nothing loaded on initial search
 
     switch (payload.searchBy) {
       case 'title':
