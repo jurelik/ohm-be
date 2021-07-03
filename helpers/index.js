@@ -353,7 +353,7 @@ const stringifyTags = (tags) => {
 //Convert license into a string for postgres
 const stringifyLicense = (license) => {
   return license.map(x => {
-    tag.trim();
+    x.trim();
     return `'${x}'`;
   }).join(", ");
 }
