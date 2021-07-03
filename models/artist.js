@@ -26,7 +26,7 @@ module.exports = (sequelize, DataTypes) => {
       unique: true
     },
     bio: {
-      type: DataTypes.STRING
+      type: DataTypes.TEXT
     },
     location: {
       type: DataTypes.STRING

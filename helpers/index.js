@@ -288,12 +288,13 @@ const addFile = async (data, t) => {
   try {
     //Convert tags into a string for postgres
     let stringifiedTags = stringifyTags(data.file.tags);
+    let stringifiedLicense = data.file.license.join(', ');
 
     if (data.file.type === 'internal') {
       const original = await db.query(`SELECT a.id AS "artistId" FROM files AS f JOIN artists AS a ON a.id = f."artistId" WHERE f.id = ${data.file.id}`, { type: Sequelize.QueryTypes.SELECT, transaction: t });
       await db.query(`INSERT INTO files (type, "songId", "artistId", "fileId", "createdAt", "updatedAt") VALUES ('internal', ${data.songId}, ${original[0].artistId}, ${data.file.id}, NOW(), NOW())`, { type: Sequelize.QueryTypes.INSERT, transaction: t });
     }
-    else await db.query(`INSERT INTO files (name, type, format, cid, tags, info, "songId", "artistId", "createdAt", "updatedAt") VALUES ('${data.file.name}', '${data.file.type}', '${data.file.format}', '${data.file.cid}', ARRAY [${stringifiedTags}], ${data.file.info ? `'${data.file.info}'` : 'NULL'}, ${data.songId}, ${data.artistId}, NOW(), NOW())`, { type: Sequelize.QueryTypes.INSERT, transaction: t });
+    else await db.query(`INSERT INTO files (name, type, format, license, cid, tags, info, "songId", "artistId", "createdAt", "updatedAt") VALUES ('${data.file.name}', '${data.file.type}', '${data.file.format}', ARRAY [${stringifiedLicense}], '${data.file.cid}', ARRAY [${stringifiedTags}], ${data.file.info ? `'${data.file.info}'` : 'NULL'}, ${data.songId}, ${data.artistId}, NOW(), NOW())`, { type: Sequelize.QueryTypes.INSERT, transaction: t });
   }
   catch (err) {
     throw err;
@@ -673,7 +674,7 @@ const getFile = async (req, res) => {
 
   try {
     if (!req.params.id) throw new Error('No file id included in request.');
-    const file = await db.query(`SELECT f.id, f.name, a.name AS artist, f.type, f.format, f.cid, f.tags, f.info FROM files AS f JOIN artists AS a ON a.id = f."artistId" WHERE f.id = ${req.params.id}`, { type: Sequelize.QueryTypes.SELECT, transaction: t });
+    const file = await db.query(`SELECT f.id, f.name, a.name AS artist, f.type, f.format, f.license, f.cid, f.tags, f.info FROM files AS f JOIN artists AS a ON a.id = f."artistId" WHERE f.id = ${req.params.id}`, { type: Sequelize.QueryTypes.SELECT, transaction: t });
 
     await t.commit();
     return res.json({

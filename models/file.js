@@ -39,6 +39,14 @@ module.exports = (sequelize, DataTypes) => {
         }
       }
     },
+    license: {
+      type: DataTypes.ARRAY(DataTypes.STRING),
+      validate: {
+        checkOriginal(value) {
+          if (!value && this.type !== 'internal') throw new Error('License is required when file is not of type "internal"');
+        }
+      }
+    },
     cid: {
       type: DataTypes.STRING,
       validate: {
