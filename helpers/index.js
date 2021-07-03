@@ -294,7 +294,7 @@ const addFile = async (data, t) => {
       const original = await db.query(`SELECT a.id AS "artistId" FROM files AS f JOIN artists AS a ON a.id = f."artistId" WHERE f.id = ${data.file.id}`, { type: Sequelize.QueryTypes.SELECT, transaction: t });
       await db.query(`INSERT INTO files (type, "songId", "artistId", "fileId", "createdAt", "updatedAt") VALUES ('internal', ${data.songId}, ${original[0].artistId}, ${data.file.id}, NOW(), NOW())`, { type: Sequelize.QueryTypes.INSERT, transaction: t });
     }
-    else await db.query(`INSERT INTO files (name, type, format, license, cid, tags, info, "songId", "artistId", "createdAt", "updatedAt") VALUES ('${data.file.name}', '${data.file.type}', '${data.file.format}', ARRAY [${stringifiedLicense}], '${data.file.cid}', ARRAY [${stringifiedTags}], ${data.file.info ? `'${data.file.info}'` : 'NULL'}, ${data.songId}, ${data.artistId}, NOW(), NOW())`, { type: Sequelize.QueryTypes.INSERT, transaction: t });
+    else await db.query(`INSERT INTO files (name, type, format, license, cid, tags, info, "songId", "artistId", "createdAt", "updatedAt") VALUES ('${data.file.name}', '${data.file.type}', '${data.file.format}', ARRAY [${stringifiedLicense}]::varchar[], '${data.file.cid}', ARRAY [${stringifiedTags}], ${data.file.info ? `'${data.file.info}'` : 'NULL'}, ${data.songId}, ${data.artistId}, NOW(), NOW())`, { type: Sequelize.QueryTypes.INSERT, transaction: t });
   }
   catch (err) {
     throw err;
