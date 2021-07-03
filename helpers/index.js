@@ -288,7 +288,7 @@ const addFile = async (data, t) => {
   try {
     //Convert tags into a string for postgres
     let stringifiedTags = stringifyTags(data.file.tags);
-    let stringifiedLicense = data.file.license.join(', ');
+    let stringifiedLicense = stringifyLicense(data.file.license);
 
     if (data.file.type === 'internal') {
       const original = await db.query(`SELECT a.id AS "artistId" FROM files AS f JOIN artists AS a ON a.id = f."artistId" WHERE f.id = ${data.file.id}`, { type: Sequelize.QueryTypes.SELECT, transaction: t });
@@ -347,6 +347,14 @@ const stringifyTags = (tags) => {
   return tags.split(/[,;]+/).map(tag => {
     tag.trim();
     return `'${tag}'`;
+  }).join(", ");
+}
+
+//Convert license into a string for postgres
+const stringifyLicense = (license) => {
+  return license.map(x => {
+    tag.trim();
+    return `'${x}'`;
   }).join(", ");
 }
 
