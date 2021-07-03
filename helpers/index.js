@@ -112,7 +112,7 @@ const getFiles = async (id, t) => {
     const a = [];
 
     for (let _file of files) {
-      const file = await db.query(`SELECT f.id, f.name, a.name AS artist, '${_file.type}' AS type, f.format, f.cid, f.tags, f.info, f."createdAt" FROM files AS f JOIN artists AS a ON a.id = f."artistId" WHERE f.id = ${_file.type === 'internal' ? _file.fileId : _file.id}`, { type: Sequelize.QueryTypes.SELECT, transaction: t });
+      const file = await db.query(`SELECT f.id, f.name, a.name AS artist, '${_file.type}' AS type, f.format, f.license, f.cid, f.tags, f.info, f."createdAt" FROM files AS f JOIN artists AS a ON a.id = f."artistId" WHERE f.id = ${_file.type === 'internal' ? _file.fileId : _file.id}`, { type: Sequelize.QueryTypes.SELECT, transaction: t });
 
       a.push(file[0]);
     }
