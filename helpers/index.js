@@ -286,6 +286,10 @@ const addSong = async (data, t) => {
 
 const addFile = async (data, t) => {
   try {
+    //Check for wrong license combinations
+    if ((data.file.license.includes('NC') || data.file.license.includes('SA') || data.file.license.includes('ND')) && !data.file.license.includes('BY')) throw new Error('Cannot use NC/SA/ND license without also using BY.');
+    if (data.file.license.includes('SA') && data.file.license.includes('ND')) throw new Error('Cannot use both SA & ND license at the same time.');
+
     //Convert tags into a string for postgres
     let stringifiedTags = stringifyTags(data.file.tags);
     let stringifiedLicense = stringifyLicense(data.file.license);
