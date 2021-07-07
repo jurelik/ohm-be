@@ -889,6 +889,33 @@ const postDelete = async (req, res) => {
   }
 }
 
+const postFollowing = async (req, res) => {
+  const t = await db.transaction();
+
+  try {
+    if (Object.keys(req.body).length === 0) throw new Error('No payload included in request.');
+
+    const payload = initialisePayload(req); //Initialise payload
+    const following = await db.query(`SELECT a.id, a.name, a.location FROM follows AS f JOIN artists AS a ON a.id = f."followingId" WHERE f."followerId" = ${payload.artistId}`, { type: Sequelize.QueryTypes.SELECT, transaction: t });
+
+    console.log(following);
+
+    await t.commit();
+    return res.json({
+      type: 'success',
+      payload: following
+    });
+  }
+  catch (err) {
+    await t.rollback();
+    console.error(err);
+    return res.json({
+      type: 'error',
+      err: err.message
+    });
+  }
+}
+
 const getFollow = async (req, res) => {
   const t = await db.transaction();
 
@@ -1044,6 +1071,7 @@ module.exports = {
   postPinned,
   postSearch,
   postDelete,
+  postFollowing,
   getFollow,
   getUnfollow,
   postChangePassword,
