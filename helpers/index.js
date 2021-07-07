@@ -126,6 +126,7 @@ const getFiles = async (id, t) => {
 
 const getFilesBySearch = async (payload, t) => {
   try {
+    if (payload.loadMore && !payload.lastItem) throw new Error('Last item reached.'); //If user clicks load more with nothing loaded on initial search
     let songs = [];
     let files;
 
@@ -179,6 +180,7 @@ const getAlbum = async (id, t) => {
 
 const getAlbumsBySearch = async (payload, t) => {
   try {
+    if (payload.loadMore && !payload.lastItem) throw new Error('Last item reached.'); //If user clicks load more with nothing loaded on initial search
     let albums;
 
     //Get albums
@@ -505,6 +507,9 @@ const postLatest = async (req, res) => {
   const t = await db.transaction();
 
   try {
+    if (Object.keys(req.body).length === 0) throw new Error('No payload included in request.');
+    if (req.body.loadMore && !req.body.lastItem) throw new Error('Last item reached.'); //If user clicks load more with nothing loaded on initial search
+
     const a = [];
     let submissions;
 
@@ -546,6 +551,9 @@ const postFeed = async (req, res) => {
   const t = await db.transaction();
 
   try {
+    if (Object.keys(req.body).length === 0) throw new Error('No payload included in request.');
+    if (req.body.loadMore && !req.body.lastItem) throw new Error('Last item reached.'); //If user clicks load more with nothing loaded on initial search
+
     const a = [];
     let submissions;
 
@@ -636,7 +644,7 @@ const getArtist = async (req, res) => {
 
 const getArtistsBySearch = async (payload, t) => {
   try {
-    //const artists = await db.query(`SELECT id, name, location FROM artists WHERE name LIKE '%${payload.searchQuery}%'`, { type: Sequelize.QueryTypes.SELECT, transaction: t });
+    if (payload.loadMore && !payload.lastItem) throw new Error('Last item reached.'); //If user clicks load more with nothing loaded on initial search
     const artists = await db.query(`SELECT id, name, location FROM artists WHERE name LIKE '%${payload.searchQuery}%' ${payload.loadMore ? `AND id < ${payload.lastItem.id}` : ''} ORDER BY id DESC LIMIT 1`, { type: Sequelize.QueryTypes.SELECT, transaction: t });
 
     if (payload.loadMore && artists.length === 0) throw new Error('Last item reached.');
@@ -775,7 +783,6 @@ const postComment = async (req, res) => {
     if (!payload.songId || !payload.content) throw new Error('Payload is missing data'); //Check for missing data
     if (!payload.artistId) throw new Error('Session is missing artist data. Try to login again.'); //Check for missing data
 
-    console.log(payload.content)
     await addComment(payload, t);
 
     await t.commit();
@@ -798,6 +805,7 @@ const postPinned = async (req, res) => {
 
   try {
     if (Object.keys(req.body).length === 0) throw new Error('No payload included in request.');
+    if (req.body.loadMore && !req.body.lastItem) throw new Error('Last item reached.'); //If user clicks load more with nothing loaded on initial search
 
     const payload = initialisePayload(req); //Initialise payload
     const albums = await getAlbumsByCID(payload.albums, t);
@@ -895,9 +903,10 @@ const postFollowing = async (req, res) => {
   try {
     if (Object.keys(req.body).length === 0) throw new Error('No payload included in request.');
     if (req.body.loadMore && !req.body.lastItem) throw new Error('Last item reached.'); //If user clicks load more with nothing loaded on initial search
+
     const payload = initialisePayload(req); //Initialise payload
 
-    const following = await db.query(`SELECT a.id, a.name, a.location FROM follows AS f JOIN artists AS a ON a.id = f."followingId" WHERE f."followerId" = ${payload.artistId} ${payload.loadMore ? `AND s.id <${payload.lastItem.id}` : ''} ORDER BY a.id DESC LIMIT 1`, { type: Sequelize.QueryTypes.SELECT, transaction: t });
+    const following = await db.query(`SELECT a.id, a.name, a.location FROM follows AS f JOIN artists AS a ON a.id = f."followingId" WHERE f."followerId" = ${payload.artistId} ${payload.loadMore ? `AND a.id <${payload.lastItem.id}` : ''} ORDER BY a.id DESC LIMIT 1`, { type: Sequelize.QueryTypes.SELECT, transaction: t });
 
     if (payload.loadMore && following.length === 0) throw new Error('Last item reached.');
 
