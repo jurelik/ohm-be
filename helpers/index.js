@@ -894,9 +894,12 @@ const postFollowing = async (req, res) => {
 
   try {
     if (Object.keys(req.body).length === 0) throw new Error('No payload included in request.');
+    if (payload.loadMore && !payload.lastItem) throw new Error('Last item reached.'); //If user clicks load more with nothing loaded on initial search
 
     const payload = initialisePayload(req); //Initialise payload
-    const following = await db.query(`SELECT a.id, a.name, a.location FROM follows AS f JOIN artists AS a ON a.id = f."followingId" WHERE f."followerId" = ${payload.artistId}`, { type: Sequelize.QueryTypes.SELECT, transaction: t });
+    const following = await db.query(`SELECT a.id, a.name, a.location FROM follows AS f JOIN artists AS a ON a.id = f."followingId" WHERE f."followerId" = ${payload.artistId} ${payload.loadMore ? `AND s.id <${payload.lastItem.id}` : ''} ORDER BY a.id DESC LIMIT 1`, { type: Sequelize.QueryTypes.SELECT, transaction: t });
+
+    if (payload.loadMore && following.length === 0) throw new Error('Last item reached.');
 
     for (let follow of following) follow.following = true; //All results are artists that the user is following
 
