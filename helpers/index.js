@@ -898,7 +898,7 @@ const postFollowing = async (req, res) => {
     const payload = initialisePayload(req); //Initialise payload
     const following = await db.query(`SELECT a.id, a.name, a.location FROM follows AS f JOIN artists AS a ON a.id = f."followingId" WHERE f."followerId" = ${payload.artistId}`, { type: Sequelize.QueryTypes.SELECT, transaction: t });
 
-    console.log(following);
+    for (let follow of following) follow.following = true; //All results are artists that the user is following
 
     await t.commit();
     return res.json({
