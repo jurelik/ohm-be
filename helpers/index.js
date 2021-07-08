@@ -906,7 +906,7 @@ const postFollowing = async (req, res) => {
 
     const payload = initialisePayload(req); //Initialise payload
 
-    const following = await db.query(`SELECT a.id, a.name, a.location FROM follows AS f JOIN artists AS a ON a.id = f."followingId" WHERE f."followerId" = ${payload.artistId} ${payload.loadMore ? `AND a.id <${payload.lastItem.id}` : ''} ORDER BY a.id DESC LIMIT 1`, { type: Sequelize.QueryTypes.SELECT, transaction: t });
+    const following = await db.query(`SELECT a.id, a.name, a.location FROM follows AS f JOIN artists AS a ON a.id = f."followingId" WHERE f."followerId" = ${payload.artistId} ${payload.loadMore ? `AND f."createdAt" < (SELECT "createdAt" FROM follows WHERE "followingId" = ${payload.lastItem.id} AND "followerId" = ${payload.artistId})` : ''} ORDER BY f."createdAt" DESC LIMIT 1`, { type: Sequelize.QueryTypes.SELECT, transaction: t });
 
     if (payload.loadMore && following.length === 0) throw new Error('Last item reached.');
 
