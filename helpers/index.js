@@ -29,7 +29,7 @@ const initDB = () => {
 const getSong = async (id, t) => {
   try {
     //Get data
-    const song = await db.query(`SELECT s.id, s.title, a.name AS artist, s."albumId" AS "albumId", s.format, s.cid, s.tags, s."createdAt" FROM songs AS s JOIN artists AS a ON a.id = s."artistId" WHERE s.id = ${id}`, { type: Sequelize.QueryTypes.SELECT, transaction: t });
+    const song = await db.query(`SELECT s.id, s.title, a.name AS artist, s."albumId" AS "albumId", s.format, s.cid, s.tags, s.description, s."createdAt" FROM songs AS s JOIN artists AS a ON a.id = s."artistId" WHERE s.id = ${id}`, { type: Sequelize.QueryTypes.SELECT, transaction: t });
     const files = await getFiles(id, t);
     const comments = await getComments(id, t);
 
@@ -52,7 +52,7 @@ const getSongsByCID = async (cids, t) => {
     if (!parsed) return [];
 
     //Get data
-    const songs = await db.query(`SELECT s.id, s.title, a.name AS artist, s."albumId" AS "albumId", s.format, s.cid, s.tags, s."createdAt" FROM songs AS s JOIN artists AS a ON a.id = s."artistId" WHERE s.cid IN (${parsed}) AND s."albumId" IS NULL ORDER BY s.id DESC`, { type: Sequelize.QueryTypes.SELECT, transaction: t });
+    const songs = await db.query(`SELECT s.id, s.title, a.name AS artist, s."albumId" AS "albumId", s.format, s.cid, s.tags, s.description, s."createdAt" FROM songs AS s JOIN artists AS a ON a.id = s."artistId" WHERE s.cid IN (${parsed}) AND s."albumId" IS NULL ORDER BY s.id DESC`, { type: Sequelize.QueryTypes.SELECT, transaction: t });
 
     for (let song of songs) {
       const files = await getFiles(song.id, t);
@@ -78,10 +78,10 @@ const getSongsBySearch = async (payload, t) => {
 
     switch (payload.searchBy) {
       case 'title':
-        songs = await db.query(`SELECT s.id, s.title, a.name AS artist, s."albumId" AS "albumId", s.format, s.cid, s.tags, s."createdAt" FROM songs AS s JOIN artists AS a ON a.id = s."artistId" WHERE s.title LIKE '%${payload.searchQuery}%' AND s."albumId" IS NULL ${payload.loadMore ? `AND s.id <${payload.lastItem.id}` : ''} ORDER BY s.id DESC LIMIT 1`, { type: Sequelize.QueryTypes.SELECT, transaction: t });
+        songs = await db.query(`SELECT s.id, s.title, a.name AS artist, s."albumId" AS "albumId", s.format, s.cid, s.tags, s.description, s."createdAt" FROM songs AS s JOIN artists AS a ON a.id = s."artistId" WHERE s.title LIKE '%${payload.searchQuery}%' AND s."albumId" IS NULL ${payload.loadMore ? `AND s.id <${payload.lastItem.id}` : ''} ORDER BY s.id DESC LIMIT 1`, { type: Sequelize.QueryTypes.SELECT, transaction: t });
         break;
       case 'tags':
-        songs = await db.query(`SELECT s.id, s.title, a.name AS artist, s."albumId" AS "albumId", s.format, s.cid, s.tags FROM songs AS s JOIN artists AS a ON a.id = s."artistId" WHERE '${payload.searchQuery}' = ANY(s.tags) AND s."albumId" IS NULL ${payload.loadMore ? `AND s.id < ${payload.lastItem.id}` : ''} ORDER BY s.id DESC LIMIT 1`, { type: Sequelize.QueryTypes.SELECT, transaction: t });
+        songs = await db.query(`SELECT s.id, s.title, a.name AS artist, s."albumId" AS "albumId", s.format, s.cid, s.tags, s.description, s."createdAt" FROM songs AS s JOIN artists AS a ON a.id = s."artistId" WHERE '${payload.searchQuery}' = ANY(s.tags) AND s."albumId" IS NULL ${payload.loadMore ? `AND s.id < ${payload.lastItem.id}` : ''} ORDER BY s.id DESC LIMIT 1`, { type: Sequelize.QueryTypes.SELECT, transaction: t });
         break;
       default:
         throw new Error('searchBy value not provided.');
@@ -270,8 +270,8 @@ const addSong = async (data, t) => {
     const stringifiedTags = stringifyTags(data.song.tags);
     let song;
 
-    if (data.albumId) song = await db.query(`INSERT INTO songs (title, format, cid, tags, "albumId", "artistId", "createdAt", "updatedAt") VALUES ('${data.song.title}', '${data.song.format}', '${data.song.cid}', ARRAY [${stringifiedTags}], ${data.albumId}, ${data.artistId}, NOW(), NOW()) RETURNING id`, { type: Sequelize.QueryTypes.INSERT, transaction: t });
-    else song = await db.query(`INSERT INTO songs (title, format, cid, tags, "artistId", "createdAt", "updatedAt") VALUES ('${data.song.title}', '${data.song.format}', '${data.song.cid}', ARRAY [${stringifiedTags}], ${data.artistId}, NOW(), NOW()) RETURNING id`, { type: Sequelize.QueryTypes.INSERT, transaction: t });
+    if (data.albumId) song = await db.query(`INSERT INTO songs (title, format, cid, tags, description, "albumId", "artistId", "createdAt", "updatedAt") VALUES ('${data.song.title}', '${data.song.format}', '${data.song.cid}', ARRAY [${stringifiedTags}], '${data.song.description}', ${data.albumId}, ${data.artistId}, NOW(), NOW()) RETURNING id`, { type: Sequelize.QueryTypes.INSERT, transaction: t });
+    else song = await db.query(`INSERT INTO songs (title, format, cid, tags, description, "artistId", "createdAt", "updatedAt") VALUES ('${data.song.title}', '${data.song.format}', '${data.song.cid}', ARRAY [${stringifiedTags}], '${data.song.description}', ${data.artistId}, NOW(), NOW()) RETURNING id`, { type: Sequelize.QueryTypes.INSERT, transaction: t });
     let songId = song[0][0].id;
 
     //Add files
