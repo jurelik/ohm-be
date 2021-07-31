@@ -2,8 +2,8 @@ const { Sequelize } = require('sequelize');
 const crypto = require('crypto');
 const db = require('../db');
 const models = require('../models');
-const createClient = require('ipfs-http-client');
-const ipfs = createClient();
+const { create } = require('ipfs-http-client');
+const ipfs = create();
 const currentlyUploading = []; //Keep track of clients currently uploading to prevent double uploads.
 
 const initDB = () => {
@@ -432,7 +432,7 @@ const checkPassword = async (payload, t) => {
 const removePin = async (cid) => {
   try {
     for await (const pin of ipfs.pin.ls({ type: 'recursive' })) {
-      if(pin.cid.string === cid) await ipfs.pin.rm(pin.cid, { recursive: true }); //Remove pin from IPFS
+      if(pin.cid.toString() === cid) await ipfs.pin.rm(pin.cid, { recursive: true }); //Remove pin from IPFS
     }
   }
   catch (err) {
