@@ -5,7 +5,8 @@ module.exports = {
   },
   {
     name: "main",
-    script: "index.js"
+    script: "npm",
+    args: "start"
   },
   {
     name: "cron",
