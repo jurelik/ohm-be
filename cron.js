@@ -4,7 +4,7 @@ const cron = require('node-cron');
 const { create } = require('ipfs-http-client');
 const db = require('./db');
 const ipfs = create();
-
+const MAX_REPO_SIZE = 100000000; //8000000000
 
 cron.schedule('* * * * *', async () => {
   try {
@@ -23,6 +23,8 @@ const clearStorage = async () => {
 
     const deleted = [];
     const items = await db.query(`SELECT s.id, i.cid, s."createdAt" FROM submissions AS s JOIN songs AS i ON i.id = s."songId" WHERE s.type = 'song' AND s.pinned = TRUE UNION ALL SELECT s.id, i.cid, s."createdAt" FROM submissions AS s JOIN albums AS i ON i.id = s."albumId" WHERE s.type = 'album' AND s.pinned = TRUE ORDER BY "createdAt" ASC LIMIT 50`, { type: Sequelize.QueryTypes.SELECT, transaction: t });
+
+    if (items.length === 0) throw('No items left to unpin.'); //Failsafe in case somebody is uploading a file larger then the MAX_REPO_SIZE (prevent infinite loop)
 
     for (const item of items) {
       if (await repoIsBelowRequiredSize()) break;
@@ -45,8 +47,7 @@ const clearStorage = async () => {
 const repoIsBelowRequiredSize = async () => {
   try {
     const stats = await ipfs.repo.stat()
-    //return stats.repoSize < 8000000000;
-    return stats.repoSize < 100000000;
+    return stats.repoSize < MAX_REPO_SIZE;
   }
   catch (err) {
     console.log(err);
