@@ -10,6 +10,7 @@ module.exports = {
   },
   {
     name: "cron",
-    script: "cron.js"
+    script: "npm",
+    args: "run cron-prod"
   }]
 }
