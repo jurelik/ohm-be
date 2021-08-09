@@ -27,7 +27,7 @@ const clearStorage = async () => {
     for (const item of items) {
       if (await repoIsBelowRequiredSize()) break;
 
-      await ipfs.pin.rm(`/ipfs/${item.cid}`).catch(null); //Remove pin (if caught it just means that pin has already been removed)
+      await ipfs.pin.rm(`/ipfs/${item.cid}`).catch(doNothing); //Remove pin (if caught it just means that pin has already been removed)
       deleted.push(item.id); //Add submission id to deleted array
       for await (const res of ipfs.repo.gc()) { /*Do nothing*/ } //Garbage collect
     }
@@ -55,4 +55,8 @@ const repoIsBelowRequiredSize = async () => {
 
 const formatDeleted = (deleted) => {
   return `(${deleted.join(', ')})`;
+}
+
+const doNothing = () => {
+  //Do nothing...
 }
