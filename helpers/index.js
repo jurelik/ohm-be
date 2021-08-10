@@ -1,28 +1,23 @@
 const { Sequelize } = require('sequelize');
 const crypto = require('crypto');
 const db = require('../db');
-const models = require('../models');
 const { create } = require('ipfs-http-client');
 const ipfs = create();
 const currentlyUploading = []; //Keep track of clients currently uploading to prevent double uploads.
 
-const initDB = () => {
-  models.sequelize.sync().then(async () => {
-    const t = await db.transaction();
+const initDB = async () => {
+  const t = await db.transaction();
 
-    try {
-      const { hash, salt } = await generateHash('test');
-      await db.query(`INSERT INTO artists (name, bio, location, pw, salt, "createdAt", "updatedAt") VALUES ('test1', 'hello world', 'earth','${hash}', '${salt}', NOW(), NOW())`, { type: Sequelize.QueryTypes.INSERT, transaction: t });
-      await db.query(`INSERT INTO artists (name, bio, location, pw, salt, "createdAt", "updatedAt") VALUES ('test2', 'hello world', 'earth','${hash}', '${salt}', NOW(), NOW())`, { type: Sequelize.QueryTypes.INSERT, transaction: t });
-      await t.commit();
-    }
-    catch (err) {
-      await t.rollback();
-      throw err;
-    }
-  }).catch(err => {
-    console.error(err);
-  });
+  try {
+    const { hash, salt } = await generateHash('test');
+    await db.query(`INSERT INTO artists (name, bio, location, pw, salt, "createdAt", "updatedAt") VALUES ('test1', 'hello world', 'earth','${hash}', '${salt}', NOW(), NOW())`, { type: Sequelize.QueryTypes.INSERT, transaction: t });
+    await db.query(`INSERT INTO artists (name, bio, location, pw, salt, "createdAt", "updatedAt") VALUES ('test2', 'hello world', 'earth','${hash}', '${salt}', NOW(), NOW())`, { type: Sequelize.QueryTypes.INSERT, transaction: t });
+    await t.commit();
+  }
+  catch (err) {
+    await t.rollback();
+    throw err;
+  }
 }
 
 //Helpers

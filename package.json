@@ -7,6 +7,8 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "NODE_ENV=development pm2 start development.config.js",
     "cron": "NODE_ENV=development node cron.js",
+    "init-db-dev": "NODE_ENV=development node init-db.js",
+    "init-db-prod": "NODE_ENV=production node init-db.js",
     "start": "NODE_ENV=production pm2 start production.config.js"
   },
   "repository": {

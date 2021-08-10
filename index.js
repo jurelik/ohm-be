@@ -7,7 +7,7 @@ const session = require('express-session');
 const SessionStore = require('./sessionStore')(session.Store);
 const db = require('./db');
 
-//helpers.initDB(); //Uncomment only when initialising db locally
+//helpers.initDB(); //Uncomment only when adding test users
 
 app.use(cors());
 app.use(session({
