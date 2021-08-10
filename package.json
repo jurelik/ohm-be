@@ -5,10 +5,9 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "NODE_ENV=development node index.js",
-    "cron-dev": "NODE_ENV=development node cron.js",
-    "cron-prod": "NODE_ENV=production node cron.js",
-    "start": "NODE_ENV=production node index.js"
+    "dev": "NODE_ENV=development pm2 start development.config.js",
+    "cron": "NODE_ENV=development node cron.js",
+    "start": "NODE_ENV=production pm2 start production.config.js"
   },
   "repository": {
     "type": "git",

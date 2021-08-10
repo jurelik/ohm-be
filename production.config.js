@@ -5,12 +5,12 @@ module.exports = {
   },
   {
     name: "main",
-    script: "npm",
-    args: "start"
+    script: "node",
+    args: "index.js"
   },
   {
     name: "cron",
-    script: "npm",
-    args: ["run", "cron-prod"]
+    script: "node",
+    args: "cron.js"
   }]
 }
