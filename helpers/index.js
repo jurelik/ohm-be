@@ -758,7 +758,6 @@ const postUpload = async (req, res) => {
     clearTimeout(uTimeout); //Stop sending progress
     console.error(err.message);
 
-    //if (uploadStarted) for await (const res of ipfs.repo.gc()) continue; //Garbage collect ONLY IF ipfs.add was triggered (not if error was thrown before)
     if (uploadStarted) currentlyUploading.splice(currentlyUploading.indexOf(req.session.artistId), 1); //Delete artistId from currentlyUploading ONLY IF upload has started
 
     return res.end(JSON.stringify({
