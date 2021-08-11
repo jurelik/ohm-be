@@ -4,7 +4,7 @@ const cron = require('node-cron');
 const { create } = require('ipfs-http-client');
 const db = require('./db');
 const ipfs = create();
-const MAX_REPO_SIZE = 8000000000; //8GB
+const MAX_REPO_SIZE = 10000000000; //10GB
 
 cron.schedule('0 * * * *', async () => {
   try {
