@@ -26,6 +26,7 @@ const addUser = async () => {
 
     res.on('data', data => {
       const _res = JSON.parse(data);
+      console.log(res)
 
       if (_res.type === 'success') return console.log('Successfully created user.');
       else return console.error(res.err);
