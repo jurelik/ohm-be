@@ -5,9 +5,7 @@ const cors = require('cors');
 const helpers = require('./helpers');
 const session = require('express-session');
 const SessionStore = require('./sessionStore')(session.Store);
-const db = require('./db');
-
-//helpers.initDB(); //Uncomment only when adding test users
+const db = require('./helpers/db');
 
 app.use(cors());
 app.use(session({

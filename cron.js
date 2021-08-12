@@ -2,7 +2,7 @@ require('dotenv-flow').config();
 const { Sequelize } = require('sequelize');
 const cron = require('node-cron');
 const { create } = require('ipfs-http-client');
-const db = require('./db');
+const db = require('./helpers/db');
 const ipfs = create();
 const MAX_REPO_SIZE = 10000000000; //10GB
 
