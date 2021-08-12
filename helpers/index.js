@@ -498,6 +498,31 @@ const postLogin = async (req, res) => {
   }
 }
 
+const postRegister = async (req, res) => {
+  const payload = req.body;
+  const t = await db.transaction();
+
+  try {
+    if (!req.body || !req.body.artist || !req.body.pw || !req.body.secret) throw new Error('Artist name, password and secret need to be included in the request.') //Check if all data is included
+    if (req.body.secret !== process.env.REGISTRATION_SECRET) throw new Error('Secret does not match.') //Check if secret matches the server secret
+
+    const { hash, salt } = await helpers.generateHash(payload.pw);
+    await db.query(`INSERT INTO artists (name, bio, location, pw, salt, "createdAt", "updatedAt") VALUES ('${payload.artist}', 'human', 'hydra forest','${hash}', '${salt}', NOW(), NOW())`, { type: Sequelize.QueryTypes.INSERT, transaction: t });
+
+    await t.commit();
+    return res.json({
+      type: 'success'
+    });
+  }
+  catch (err) {
+    await t.rollback();
+    return res.json({
+      type: 'error',
+      err: err.message
+    });
+  }
+}
+
 const postLatest = async (req, res) => {
   const t = await db.transaction();
 
@@ -1067,6 +1092,7 @@ module.exports = {
   initDB,
   userAuthenticated,
   postLogin,
+  postRegister,
   postLatest,
   postFeed,
   getArtist,

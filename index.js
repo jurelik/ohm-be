@@ -32,6 +32,10 @@ app.post('/api/login', express.json(), (req, res) => {
   helpers.postLogin(req, res);
 });
 
+app.post('/api/register', express.json(), (req, res) => {
+  helpers.postRegister(req, res);
+});
+
 app.post('/api/latest', express.json(), (req, res) => {
   if (!helpers.userAuthenticated(req, res)) return;
   helpers.postLatest(req, res);
