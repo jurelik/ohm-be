@@ -12,7 +12,8 @@
     "cron": "NODE_ENV=development pm2 start cron.js",
     "dev": "NODE_ENV=development pm2 start ./config/development.config.js && pm2 save",
     "test-server": "NODE_ENV=test pm2 start ./config/test.config.js",
-    "start": "NODE_ENV=production pm2 start ./config/production.config.js && pm2 save"
+    "start": "NODE_ENV=production pm2 start ./config/production.config.js && pm2 save",
+    "stop": "pm2 delete all"
   },
   "repository": {
     "type": "git",
