@@ -54,6 +54,11 @@ app.get('/api/song/:id', (req, res) => {
   helpers.getSongRoute(req, res);
 });
 
+app.get('/api/album/:id', (req, res) => {
+  if (!helpers.userAuthenticated(req, res)) return;
+  helpers.getAlbumRoute(req, res);
+});
+
 app.get('/api/file/:id', (req, res) => {
   if (!helpers.userAuthenticated(req, res)) return;
   helpers.getFile(req, res);
