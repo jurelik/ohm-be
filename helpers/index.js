@@ -315,9 +315,12 @@ const deleteAlbum = async (payload, t) => {
 
 //Convert tags into a string for postgres
 const stringifyTags = (tags) => {
-  return tags.split(/[,;]+/).map(tag => {
-    tag.trim();
-    return `'${tag}'`;
+  tags.split(/[,;]+/).reduce((acc, current) => {
+    if (typeof acc === 'string') acc = [ `'${acc}'` ]; //Initialize accumulator
+    const trimmed = current.trim();
+
+    if (trimmed === '') return [ ...acc ]; //Ignore empty tags
+    return [ ...acc, `'${trimmed}'` ];
   }).join(", ");
 }
 
@@ -336,15 +339,6 @@ const stringifyWhereIn = (array) => {
   return array.map(item => {
     item.trim();
     return `'${item}'`;
-  }).join(', ');
-}
-
-//Parse array of objects into string
-const stringifyWhereInAlbum = (array) => {
-  if (array.length === 0) return false;
-
-  return array.map(item => {
-    return `('${item.artist}', '${item.title}')`;
   }).join(', ');
 }
 
