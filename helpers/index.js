@@ -315,7 +315,7 @@ const deleteAlbum = async (payload, t) => {
 
 //Convert tags into a string for postgres
 const stringifyTags = (tags) => {
-  tags.split(/[,;]+/).reduce((acc, current) => {
+  return tags.split(/[,;]+/).reduce((acc, current) => {
     if (typeof acc === 'string') acc = [ `'${acc}'` ]; //Initialize accumulator
     const trimmed = current.trim();
 
