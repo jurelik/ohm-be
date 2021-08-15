@@ -4,7 +4,7 @@ const app = express();;
 const cors = require('cors');
 const helpers = require('./helpers');
 const session = require('express-session');
-const SessionStore = require('./sessionStore')(session.Store);
+const SessionStore = require('./helpers/sessionStore')(session.Store);
 const db = require('./helpers/db');
 
 app.use(cors());
