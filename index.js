@@ -23,7 +23,7 @@ app.use(session({
 }))
 
 app.get('/', (req, res) => {
-  res.end('Hello traveler.');
+  res.end('Greetings traveler.');
 });
 
 app.post('/login', express.json(), (req, res) => {
