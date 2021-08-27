@@ -136,6 +136,7 @@ const getAlbum = async (id, t) => {
   try {
     //Get album
     const album = await db.query(`SELECT al.id, al.title, ar.name AS artist, al.cid, al.tags, al.description, al."createdAt" FROM albums AS al JOIN artists AS ar ON ar.id = al."artistId" WHERE al.id = ${id}`, { type: Sequelize.QueryTypes.SELECT, transaction: t });
+
     //Get songs
     album[0].songs = [];
     const songs = await db.query(`SELECT id FROM songs WHERE "albumId" = '${id}'`, { type: Sequelize.QueryTypes.SELECT, transaction: t });
@@ -145,8 +146,7 @@ const getAlbum = async (id, t) => {
       album[0].songs.push(song);
     }
 
-    //Append additional data to album
-    album[0].type = 'album';
+    album[0].type = 'album'; //Append additional data to album
 
     return album[0];
   }
@@ -158,7 +158,16 @@ const getAlbum = async (id, t) => {
 const getAlbumShallow = async (id, t) => {
   try {
     //Get album
-    const album = await db.query(`SELECT al.id, al.title, ar.name AS artist, al.cid, al.tags, (SELECT COUNT(id) FROM songs WHERE "albumId" = ${id}) AS songs, al."createdAt" FROM albums AS al JOIN artists AS ar ON ar.id = al."artistId" WHERE al.id = ${id}`, { type: Sequelize.QueryTypes.SELECT, transaction: t });
+    const album = await db.query(`SELECT al.id, al.title, ar.name AS artist, al.cid, al.tags, al."createdAt" FROM albums AS al JOIN artists AS ar ON ar.id = al."artistId" WHERE al.id = ${id}`, { type: Sequelize.QueryTypes.SELECT, transaction: t });
+
+    //Get songs
+    album[0].songs = [];
+    const songs = await db.query(`SELECT id FROM songs WHERE "albumId" = '${id}'`, { type: Sequelize.QueryTypes.SELECT, transaction: t });
+
+    for (let _song of songs) {
+      let song = await getSongShallow(_song.id, t);
+      album[0].songs.push(song);
+    }
 
     album[0].type = 'album'; //Append additional data to album
 
