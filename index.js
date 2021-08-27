@@ -10,7 +10,7 @@ const db = require('./helpers/db');
 app.use(cors());
 app.use(session({
   name: 'ohm_cookie',
-  secret: process.env.COOKIE_SECRET, //Change this in production
+  secret: process.env.COOKIE_SECRET,
   resave: false,
   rolling: true,
   saveUninitialized: false,
@@ -19,7 +19,7 @@ app.use(session({
   cookie: {
     secure: process.env.NODE_ENV === 'development' ? false : true,
     maxAge: process.env.NODE_ENV === 'development' ? 1000 * 60 * 60 : 1000 * 60 * 60 * 24 * 3,
-    sameSite: process.env.NODE_ENV === 'development' ? 'none' : 'strict' //Change this in production
+    sameSite: 'none'
   }
 }));
 
