@@ -758,6 +758,10 @@ const postUpload = async (req, res) => {
       await db.query(`INSERT INTO submissions (type, "artistId", "songId",  "createdAt", "updatedAt") VALUES ('song', ${payload.artistId}, ${songId}, NOW(), NOW())`, { type: Sequelize.QueryTypes.INSERT, transaction: t }); //Add submission
     }
 
+    // BLACK MAGIC START
+    res.append('X-Accel-Buffering', 'no'); //This adds the X-Accel-Buffering header to the response, which allows NGINX to pass through individual res.writes
+    // BLACK MAGIC END
+
     uTimeout = uploadTimeout({ //Send progress every second
       res,
       cid,
