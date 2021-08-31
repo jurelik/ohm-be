@@ -222,6 +222,8 @@ const getAlbumsByCID = async (cids, t) => {
 }
 
 const addAlbum = async (payload, t) => {
+  if (!allowedFormat(data.album.title)) throw new Error('Album title can only include letters, numbers and underscores.'); //Check for bad characters in title
+
   //Convert tags into a string for postgres
   let stringifiedTags = stringifyTags(payload.album.tags);
 
@@ -239,6 +241,7 @@ const addAlbum = async (payload, t) => {
 const addSong = async (data, t) => {
   try {
     if (data.song.format !== 'mp3') throw new Error('Song files must be mp3 only.'); //Only allow mp3s as original song files
+    if (!allowedFormat(data.song.title)) throw new Error('Song title can only include letters, numbers and underscores.'); //Check for bad characters in title
 
     //Convert tags into a string for postgres
     const stringifiedTags = stringifyTags(data.song.tags);
@@ -265,6 +268,7 @@ const addFile = async (data, t) => {
     //Check for wrong license combinations
     if ((data.file.license.includes('NC') || data.file.license.includes('SA') || data.file.license.includes('ND')) && !data.file.license.includes('BY')) throw new Error('Cannot use NC/SA/ND license without also using BY.');
     if (data.file.license.includes('SA') && data.file.license.includes('ND')) throw new Error('Cannot use both SA & ND license at the same time.');
+    if (data.file.type !== 'internal' && !allowedFormat(data.file.name)) throw new Error('File name can only include letters, numbers and underscores.'); //Check for bad characters in title
 
     //Convert tags into a string for postgres
     let stringifiedTags = stringifyTags(data.file.tags);
@@ -434,6 +438,13 @@ const uploadTimeout = (data, progress) => {
   }, 1000)
 }
 
+const allowedFormat = (string) => {
+  if (string.length === 0) return false;
+
+  const regex = /^\w+$/;
+  return regex.test(string);
+}
+
 //Route handlers
 const postLogin = async (req, res) => {
   if (req.session.authenticated) { //Check if session is already established
@@ -481,6 +492,7 @@ const postRegister = async (req, res) => {
   try {
     if (!req.body || !req.body.artist || !req.body.pw || !req.body.secret) throw new Error('Artist name, password and secret need to be included in the request.') //Check if all data is included
     if (req.body.secret !== process.env.REGISTRATION_SECRET) throw new Error('Secret does not match.') //Check if secret matches the server secret
+    if (!allowedFormat(req.body.artist)) throw new Error('Username can only contain numbers, letters and underscores.'); //Check username for bad characters
 
     const { hash, salt } = await generateHash(payload.pw);
     await db.query(`INSERT INTO artists (name, bio, location, pw, salt, "createdAt", "updatedAt") VALUES ('${payload.artist}', 'human', 'hydra forest','${hash}', '${salt}', NOW(), NOW())`, { type: Sequelize.QueryTypes.INSERT, transaction: t });
