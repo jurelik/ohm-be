@@ -20,7 +20,7 @@
     "url": "git+https://github.com/jurelik/ohm-be.git"
   },
   "author": "",
-  "license": "ISC",
+  "license": "GPL-3.0-only",
   "bugs": {
     "url": "https://github.com/jurelik/ohm-be/issues"
   },
