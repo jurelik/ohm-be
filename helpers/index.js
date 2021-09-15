@@ -35,7 +35,7 @@ const getSongShallow = async (id, t) => {
     return song[0];
   }
   catch (err) {
-    console.log(err)
+    console.error(err.message)
     throw err.message;
   }
 }
@@ -432,7 +432,7 @@ const uploadTimeout = (data, progress) => {
       uploadTimeout(data, progress);
     }
     catch (err) {
-      console.log(err.message);
+      console.error(err.message);
       uploadTimeout(data, progress);
     }
   }, 1000)
@@ -642,7 +642,7 @@ const getArtist = async (req, res) => {
   }
   catch (err) {
     await t.rollback();
-    console.error(err);
+    console.error(err.message);
     return res.json({
       type: 'error',
       err: err.message
@@ -689,7 +689,7 @@ const getSongRoute = async (req, res) => {
   }
   catch (err) {
     await t.rollback();
-    console.error(err);
+    console.error(err.message);
     return res.json({
       type: 'error',
       err: err.message
@@ -712,7 +712,7 @@ const getAlbumRoute = async (req, res) => {
   }
   catch (err) {
     await t.rollback();
-    console.error(err);
+    console.error(err.message);
     return res.json({
       type: 'error',
       err: err.message
@@ -735,7 +735,7 @@ const getFile = async (req, res) => {
   }
   catch (err) {
     await t.rollback();
-    console.error(err);
+    console.error(err.message);
     return res.json({
       type: 'error',
       err: err.message
@@ -826,7 +826,7 @@ const postComment = async (req, res) => {
   }
   catch (err) {
     await t.rollback();
-    console.error(err);
+    console.error(err.message);
     return res.json({
       type: 'error',
       err
@@ -856,7 +856,7 @@ const postPinned = async (req, res) => {
   }
   catch (err) {
     await t.rollback();
-    console.error(err);
+    console.error(err.message);
     return res.json({
       type: 'error',
       err
@@ -898,7 +898,7 @@ const postSearch = async (req, res) => {
   }
   catch (err) {
     await t.rollback();
-    console.error(err);
+    console.error(err.message);
     return res.json({
       type: 'error',
       err: err.message
@@ -923,7 +923,7 @@ const postDelete = async (req, res) => {
   }
   catch (err) {
     await t.rollback();
-    console.error(err);
+    console.error(err.message);
     return res.json({
       type: 'error',
       err: err.message
@@ -954,7 +954,7 @@ const postFollowing = async (req, res) => {
   }
   catch (err) {
     await t.rollback();
-    console.error(err);
+    console.error(err.message);
     return res.json({
       type: 'error',
       err: err.message
@@ -978,7 +978,7 @@ const getFollow = async (req, res) => {
   }
   catch (err) {
     await t.rollback();
-    console.error(err);
+    console.error(err.message);
     return res.json({
       type: 'error',
       err: err.message
@@ -1000,7 +1000,7 @@ const getUnfollow = async (req, res) => {
   }
   catch (err) {
     await t.rollback();
-    console.error(err);
+    console.error(err.message);
     return res.json({
       type: 'error',
       err: err.message
@@ -1028,7 +1028,7 @@ const postChangePassword = async (req, res) => {
   }
   catch (err) {
     await t.rollback();
-    console.error(err);
+    console.error(err.message);
     return res.json({
       type: 'error',
       err: err.message
@@ -1053,7 +1053,7 @@ const postChangeLocation = async (req, res) => {
   }
   catch (err) {
     await t.rollback();
-    console.error(err);
+    console.error(err.message);
     return res.json({
       type: 'error',
       err: err.message
@@ -1078,7 +1078,7 @@ const postChangeBio = async (req, res) => {
   }
   catch (err) {
     await t.rollback();
-    console.error(err);
+    console.error(err.message);
     return res.json({
       type: 'error',
       err: err.message
@@ -1095,7 +1095,7 @@ const getLogout = async (req, res) => {
   }
   catch (err) {
     await t.rollback();
-    console.error(err);
+    console.error(err.message);
     return res.json({
       type: 'error',
       err: err.message
