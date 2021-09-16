@@ -1,4 +1,4 @@
-# ohm-be
+![logo](./icon.svg)
 
 back-end for [ohm](https://github.com/jurelik/ohm).
 
