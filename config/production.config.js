@@ -1,7 +1,7 @@
 module.exports = {
   apps : [{
     name: "ipfs-daemon",
-    script: "ipfs daemon --enable-gc",
+    script: "ipfs daemon --enable-gc --routing=dhtclient",
     max_memory_restart: "500M"
   },
   {
