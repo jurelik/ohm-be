@@ -17,9 +17,11 @@ REGISTRATION_SECRET=secret
 
 After that run:
 ```
+git clone https://github.com/jurelik/ohm-be.git && cd ohm-be
 npm install
 npm run init_db_dev
 npm run init_ipfs //OPTIONAL - only if you don't have an .ohm-ipfs repo set up locally yet
+npm install pm2 -g //OPTIONAL - only if you don't have pm2 installed yet
 npm run dev
 ```
 
