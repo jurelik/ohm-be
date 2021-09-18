@@ -1,6 +1,6 @@
 require('dotenv-flow').config();
 const express = require('express');
-const app = express();;
+const app = express();
 const cors = require('cors');
 const helpers = require('./helpers');
 const session = require('express-session');
