@@ -336,6 +336,7 @@ const stringifyTags = (tags) => {
     const trimmed = current.trim();
 
     if (trimmed === '') return [ ...acc ]; //Ignore empty tags
+    if (!allowedFormat(trimmed)) throw new Error ('Tags can only contain letters, numbers and underscores.')
     return [ ...acc, `'${trimmed}'` ];
   }).join(", ");
 }
