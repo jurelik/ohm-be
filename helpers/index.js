@@ -245,10 +245,26 @@ const addSong = async (data, t) => {
 
     //Convert tags into a string for postgres
     const stringifiedTags = stringifyTags(data.song.tags);
+    const formattedTags = formatTags(data.song.tags);
     let song;
 
-    if (data.albumId) song = await db.query(`INSERT INTO songs (title, format, cid, tags, description, "albumId", "artistId", "createdAt", "updatedAt") VALUES ('${data.song.title}', '${data.song.format}', '${data.song.cid}', ARRAY [${stringifiedTags}], '${data.song.description}', ${data.albumId}, ${data.artistId}, NOW(), NOW()) RETURNING id`, { type: Sequelize.QueryTypes.INSERT, transaction: t });
-    else song = await db.query(`INSERT INTO songs (title, format, cid, tags, description, "artistId", "createdAt", "updatedAt") VALUES ('${data.song.title}', '${data.song.format}', '${data.song.cid}', ARRAY [${stringifiedTags}], '${data.song.description}', ${data.artistId}, NOW(), NOW()) RETURNING id`, { type: Sequelize.QueryTypes.INSERT, transaction: t });
+    if (data.albumId) song = await db.query(`INSERT INTO songs (title, format, cid, tags, description, "albumId", "artistId", "createdAt", "updatedAt") VALUES (:title, :format, :cid, ARRAY [:tags], :description, :albumId, :artistId, NOW(), NOW()) RETURNING id`, { replacements: {
+      title: data.song.title,
+      format: data.song.format,
+      cid: data.song.cid,
+      tags: formattedTags,
+      description: data.song.description,
+      albumId: data.albumId,
+      artistId: data.artistId
+    }, type: Sequelize.QueryTypes.INSERT, transaction: t });
+    else song = await db.query(`INSERT INTO songs (title, format, cid, tags, description, "artistId", "createdAt", "updatedAt") VALUES (:title, :format, :cid, ARRAY [:tags], :description, :artistId, NOW(), NOW()) RETURNING id`, { replacements: {
+      title: data.song.title,
+      format: data.song.format,
+      cid: data.song.cid,
+      tags: formattedTags,
+      description: data.song.description,
+      artistId: data.artistId
+    }, type: Sequelize.QueryTypes.INSERT, transaction: t });
     let songId = song[0][0].id;
 
     //Add files
@@ -328,17 +344,40 @@ const deleteAlbum = async (payload, t) => {
 
 //Convert tags into a string for postgres
 const stringifyTags = (tags) => {
-  let a = tags.split(/[,;]+/);
-  if (a.length === 1) return `'${a[0].trim()}'`; //Handle one tag scenario
-
-  return a.reduce((acc, current) => {
-    if (typeof acc === 'string') acc = [ `'${acc.trim()}'` ]; //Initialize accumulator
-    const trimmed = current.trim();
-
-    if (trimmed === '') return [ ...acc ]; //Ignore empty tags
+  if (tags.length === 0) throw new Error ('Tags are missing.');
+  else if (tags.length === 1) {
+    if (tags[0] === '') throw new Error ('Tags are missing.');
     if (!allowedFormat(trimmed)) throw new Error ('Tags can only contain letters, numbers and underscores.')
-    return [ ...acc, `'${trimmed}'` ];
-  }).join(", ");
+    return `'${tags[0].trim()}'`; //Handle one tag scenario
+  }
+
+  const filtered = [];
+  for (let tag of tags) {
+    const trimmed = tag.trim();
+
+    if (trimmed === '') continue;
+    if (!allowedFormat(trimmed)) throw new Error ('Tags can only contain letters, numbers and underscores.')
+    filtered.push(trimmed);
+  }
+
+  if (filtered.length === 0) throw new Error ('Tags are missing.');
+  return filtered.join(", ");
+}
+
+const formatTags = (tags) => {
+  if (tags.length === 0) throw new Error ('Tags are missing.');
+  const filtered = [];
+
+  for (let tag of tags) {
+    const trimmed = tag.trim();
+
+    if (trimmed === '') continue;
+    if (!allowedFormat(trimmed)) throw new Error ('Tags can only contain letters, numbers and underscores.')
+    filtered.push(trimmed);
+  }
+
+  if (filtered.length === 0) throw new Error ('Tags are missing.');
+  return filtered;
 }
 
 //Convert license into a string for postgres
