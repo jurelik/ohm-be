@@ -309,8 +309,8 @@ const getAlbumsByCID = async (cids, t) => {
 }
 
 const addAlbum = async (payload, t) => {
-  if (!allowedFormat(data.album.title)) throw new Error('Album title can only include letters, numbers and underscores.'); //Check for bad characters in title
-  const formattedTags = formatTags(data.album.tags); //Format and trim tags
+  if (!allowedFormat(payload.album.title)) throw new Error('Album title can only include letters, numbers and underscores.'); //Check for bad characters in title
+  const formattedTags = formatTags(payload.album.tags); //Format and trim tags
 
   let album = await db.query(`INSERT INTO albums (title, cid, tags, description, "artistId", "createdAt", "updatedAt") VALUES (:title, :cid, ARRAY [:formattedTags], :description, :artistId, NOW(), NOW()) RETURNING id`, {
     replacements: {
