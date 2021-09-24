@@ -82,7 +82,7 @@ const getSongsBySearch = async (payload, t) => {
         songs = await db.query(`SELECT s.id, s.title, a.name AS artist, s."albumId" AS "albumId", s.format, s.cid, s.tags, (SELECT COUNT(f.id) FROM files AS f WHERE "songId" = s.id) AS files, (SELECT COUNT(c.id) FROM comments AS c WHERE "songId" = s.id) AS comments, s."createdAt" FROM songs AS s JOIN artists AS a ON a.id = s."artistId" WHERE s.title LIKE :searchQuery AND s."albumId" IS NULL ${payload.loadMore ? `AND s.id < :lastItemId` : ''} ORDER BY s.id DESC LIMIT 10`, {
           replacements: {
             searchQuery: `%${payload.searchQuery}%`,
-            lastItemId: payload.lastItem.id
+            lastItemId: payload.lastItem ? payload.lastItem.id : null
           },
           type: Sequelize.QueryTypes.SELECT,
           transaction: t });
@@ -91,7 +91,7 @@ const getSongsBySearch = async (payload, t) => {
         songs = await db.query(`SELECT s.id, s.title, a.name AS artist, s."albumId" AS "albumId", s.format, s.cid, s.tags, (SELECT COUNT(f.id) FROM files AS f WHERE "songId" = s.id) AS files, (SELECT COUNT(c.id) FROM comments AS c WHERE "songId" = s.id) AS comments, s."createdAt" FROM songs AS s JOIN artists AS a ON a.id = s."artistId" WHERE :searchQuery = ANY(s.tags) AND s."albumId" IS NULL ${payload.loadMore ? `AND s.id < :lastItemId` : ''} ORDER BY s.id DESC LIMIT 10`, {
           replacements: {
             searchQuery: payload.searchQuery,
-            lastItemId: payload.lastItem.id
+            lastItemId: payload.lastItem ? payload.lastItem.id : null
           },
           type: Sequelize.QueryTypes.SELECT,
           transaction: t });
@@ -151,7 +151,7 @@ const getFilesBySearch = async (payload, t) => {
         files = await db.query(`SELECT DISTINCT "songId" FROM files WHERE name LIKE :searchQuery AND "fileId" IS NULL ${payload.loadMore ? `AND "createdAt" < (SELECT "createdAt" FROM songs WHERE id = :lastItemId)` : ''} ORDER BY "songId" DESC LIMIT 10`, {
           replacements: {
             searchQuery: `%${payload.searchQuery}%`,
-            lastItemId: payload.lastItem.id
+            lastItemId: payload.lastItem ? payload.lastItem.id : null
           },
           type: Sequelize.QueryTypes.SELECT,
           transaction: t });
@@ -160,7 +160,7 @@ const getFilesBySearch = async (payload, t) => {
         files = await db.query(`SELECT DISTINCT "songId" FROM files WHERE :searchQuery = ANY(tags) AND "fileId" IS NULL ${payload.loadMore ? `AND "createdAt" < (SELECT "createdAt" FROM songs WHERE id = :lastItemId)` : ''} ORDER BY "songId" DESC LIMIT 10`, {
           replacements: {
             searchQuery: payload.searchQuery,
-            lastItemId: payload.lastItem.id
+            lastItemId: payload.lastItem ? payload.lastItem.id : null
           },
           type: Sequelize.QueryTypes.SELECT,
           transaction: t });
@@ -260,7 +260,7 @@ const getAlbumsBySearch = async (payload, t) => {
         albums = await db.query(`SELECT al.id, al.title, ar.name AS artist,  al.cid, al.tags, (SELECT COUNT(s.id) FROM songs AS s WHERE "albumId" = al.id) AS songs, al."createdAt" FROM albums AS al JOIN artists AS ar ON ar.id = al."artistId" WHERE al.title LIKE :searchQuery ${payload.loadMore ? `AND al.id < :lastItemId` : ''} ORDER BY al.id DESC LIMIT 10`, {
           replacements: {
             searchQuery: `%${payload.searchQuery}%`,
-            lastItemId: payload.lastItem.id
+            lastItemId: payload.lastItem ? payload.lastItem.id : null
           },
           type: Sequelize.QueryTypes.SELECT,
           transaction: t });
@@ -269,7 +269,7 @@ const getAlbumsBySearch = async (payload, t) => {
         albums = await db.query(`SELECT al.id, al.title, ar.name AS artist,  al.cid, al.tags, (SELECT COUNT(s.id) FROM songs AS s WHERE "albumId" = al.id) AS songs, al."createdAt" FROM albums AS al JOIN artists AS ar ON ar.id = al."artistId" WHERE :searchQuery = ANY(al.tags) ${payload.loadMore ? `AND al.id < :lastItemId` : ''} ORDER BY al.id DESC LIMIT 10`, {
           replacements: {
             searchQuery: payload.searchQuery,
-            lastItemId: payload.lastItem.id
+            lastItemId: payload.lastItem ? payload.lastItem.id : null
           },
           type: Sequelize.QueryTypes.SELECT, transaction: t });
         break;
@@ -730,9 +730,8 @@ const postLatest = async (req, res) => {
     let submissions;
 
     //Get submissions depending on loadMore attribute
-    if (req.body.loadMore) submissions = await db.query(`SELECT "songId", "albumId" FROM submissions WHERE "createdAt" < (SELECT "createdAt" FROM submissions WHERE ":lastItemTypeId" = :lastItemId) ORDER BY "createdAt" DESC LIMIT 10`, {
+    if (req.body.loadMore) submissions = await db.query(`SELECT "songId", "albumId" FROM submissions WHERE "createdAt" < (SELECT "createdAt" FROM submissions WHERE "${req.body.lastItem.type}Id" = :lastItemId) ORDER BY "createdAt" DESC LIMIT 10`, {
       replacements: {
-        lastItemTypeId: `${req.body.lastItem.type}Id`,
         lastItemId: req.body.lastItem.id
       },
       type: Sequelize.QueryTypes.SELECT,
@@ -780,10 +779,9 @@ const postFeed = async (req, res) => {
     let submissions;
 
     //Get submissions depending on loadMore attribute
-    if (req.body.loadMore) submissions = await db.query(`SELECT "songId", "albumId" FROM submissions WHERE ("artistId" IN (SELECT "followingId" FROM follows WHERE "followerId" = :artistId) OR "artistId" = :artistId) AND "createdAt" < (SELECT "createdAt" FROM submissions WHERE ":lastItemTypeId" = :lastItemId) ORDER BY "createdAt" DESC LIMIT 10`, {
+    if (req.body.loadMore) submissions = await db.query(`SELECT "songId", "albumId" FROM submissions WHERE ("artistId" IN (SELECT "followingId" FROM follows WHERE "followerId" = :artistId) OR "artistId" = :artistId) AND "createdAt" < (SELECT "createdAt" FROM submissions WHERE "${req.body.lastItem.type}Id" = :lastItemId) ORDER BY "createdAt" DESC LIMIT 10`, {
       replacements: {
         artistId: req.session.artistId,
-        lastItemTypeId: `${req.body.lastItem.type}Id`,
         lastItemId: req.body.lastItem.id
       },
       type: Sequelize.QueryTypes.SELECT,
@@ -901,10 +899,10 @@ const getArtist = async (req, res) => {
 const getArtistsBySearch = async (payload, t) => {
   try {
     if (payload.loadMore && !payload.lastItem) throw new Error('Last item reached.'); //If user clicks load more with nothing loaded on initial search
-    const artists = await db.query(`SELECT id, name, location FROM artists WHERE name LIKE :searchQuery ${payload.loadMore ? `AND id < :lastItemId` : ''} ORDER BY id DESC LIMIT 10`, {
+    const artists = await db.query(`SELECT id, name, location FROM artists WHERE name LIKE :searchQuery${payload.loadMore ? ` AND id < :lastItemId` : ''} ORDER BY id DESC LIMIT 10`, {
       replacements: {
-        searchQuery: `&${payload.searchQuery}&`,
-        lastItemId: payload.lastItem.id
+        searchQuery: `%${payload.searchQuery}%`,
+        lastItemId: payload.lastItem ? payload.lastItem.id : null
       },
       type: Sequelize.QueryTypes.SELECT,
       transaction: t });
@@ -915,7 +913,7 @@ const getArtistsBySearch = async (payload, t) => {
       //Check if user is following the artist
       const following = await db.query(`SELECT id FROM follows WHERE "followerId" = :sessionArtistId AND "followingId" = :artistId`, {
         replacements: {
-          sessionArtistId: req.session.artistId,
+          sessionArtistId: payload.artistId,
           artistId: artist.id
         },
         type: Sequelize.QueryTypes.SELECT,
@@ -1220,7 +1218,7 @@ const postFollowing = async (req, res) => {
     const following = await db.query(`SELECT a.id, a.name, a.location FROM follows AS f JOIN artists AS a ON a.id = f."followingId" WHERE f."followerId" = :artistId ${payload.loadMore ? `AND f."createdAt" < (SELECT "createdAt" FROM follows WHERE "followingId" = :lastItemId AND "followerId" = :artistId)` : ''} ORDER BY f."createdAt" DESC LIMIT 10`, {
       replacements: {
         artistId: req.session.artistId,
-        lastItemId: payload.lastItem.id
+        lastItemId: payload.lastItem ? payload.lastItem.id : null
       },
       type: Sequelize.QueryTypes.SELECT,
       transaction: t });
