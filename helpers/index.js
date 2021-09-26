@@ -379,13 +379,12 @@ const addSong = async (data, t) => {
 
 const addFile = async (data, t) => {
   try {
-    //Check for wrong license combinations
-    if ((data.file.license.includes('NC') || data.file.license.includes('SA') || data.file.license.includes('ND')) && !data.file.license.includes('BY')) throw new Error('Cannot use NC/SA/ND license without also using BY.');
-    if (data.file.license.includes('SA') && data.file.license.includes('ND')) throw new Error('Cannot use both SA & ND license at the same time.');
-    if (data.file.type !== 'internal' && !allowedFormat(data.file.name)) throw new Error('File name can only include letters, numbers and underscores.'); //Check for bad characters in title
-
-    const formattedTags = formatTags(data.file.tags); //Format and trim tags
-    const formattedLicense = formatLicense(data.file.license); //Format and trim license
+    if (data.file.type !== 'internal') {
+      //Check for wrong license combinations
+      if ((data.file.license.includes('NC') || data.file.license.includes('SA') || data.file.license.includes('ND')) && !data.file.license.includes('BY')) throw new Error('Cannot use NC/SA/ND license without also using BY.');
+      if (data.file.license.includes('SA') && data.file.license.includes('ND')) throw new Error('Cannot use both SA & ND license at the same time.');
+      if (!allowedFormat(data.file.name)) throw new Error('File name can only include letters, numbers and underscores.'); //Check for bad characters in title
+    }
 
     if (data.file.type === 'internal') {
       const original = await db.query(`SELECT a.id AS "artistId" FROM files AS f JOIN artists AS a ON a.id = f."artistId" WHERE f.id = :id`, {
@@ -403,20 +402,25 @@ const addFile = async (data, t) => {
         type: Sequelize.QueryTypes.INSERT,
         transaction: t });
     }
-    else await db.query(`INSERT INTO files (name, type, format, license, cid, tags, info, "songId", "artistId", "createdAt", "updatedAt") VALUES (:name, :type, :format, ARRAY [:formattedLicense]::varchar[], :cid, ARRAY [:formattedTags], ${data.file.info ? ':info' : 'NULL'}, :songId, :artistId, NOW(), NOW())`, {
-      replacements: {
-        name: data.file.name,
-        type: data.file.type,
-        format: data.file.format,
-        formattedLicense,
-        cid: data.file.cid,
-        formattedTags,
-        info: data.file.info,
-        songId: data.songId,
-        artistId: data.artistId
-      },
-      type: Sequelize.QueryTypes.INSERT,
-      transaction: t });
+    else {
+      const formattedTags = formatTags(data.file.tags); //Format and trim tags
+      const formattedLicense = formatLicense(data.file.license); //Format and trim license
+
+      await db.query(`INSERT INTO files (name, type, format, license, cid, tags, info, "songId", "artistId", "createdAt", "updatedAt") VALUES (:name, :type, :format, ARRAY [:formattedLicense]::varchar[], :cid, ARRAY [:formattedTags], ${data.file.info ? ':info' : 'NULL'}, :songId, :artistId, NOW(), NOW())`, {
+        replacements: {
+          name: data.file.name,
+          type: data.file.type,
+          format: data.file.format,
+          formattedLicense,
+          cid: data.file.cid,
+          formattedTags,
+          info: data.file.info,
+          songId: data.songId,
+          artistId: data.artistId
+        },
+        type: Sequelize.QueryTypes.INSERT,
+        transaction: t });
+    }
   }
   catch (err) {
     throw err;
