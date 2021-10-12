@@ -650,7 +650,6 @@ const allowedFormat = (string) => {
 
 //Route handlers
 const postLogin = async (req, res) => {
-    console.log(req.session)
   if (req.session.authenticated) { //Check if session is already established
     return res.json({
       type: 'success',
@@ -662,7 +661,6 @@ const postLogin = async (req, res) => {
   const t = await db.transaction();
 
   try {
-    console.log(req.body)
     if (!req.body || Object.keys(req.body).length === 0) throw new Error('No running session found, please login.') //If no session is established, req.body is required
 
     if (payload.artist && payload.pw) {
