@@ -17,7 +17,7 @@ app.use(session({
   store: new SessionStore({}, db),
   proxy: true,
   cookie: {
-    secure: process.env.NODE_ENV === 'development' ? false : true,
+    secure: true,
     maxAge: process.env.NODE_ENV === 'development' ? 1000 * 60 * 60 : 1000 * 60 * 60 * 24 * 3,
     sameSite: 'none'
   }
