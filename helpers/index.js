@@ -992,6 +992,8 @@ const getFile = async (req, res) => {
       type: Sequelize.QueryTypes.SELECT,
       transaction: t });
 
+    if (file.length === 0) throw new Error(`File with id "${req.params.id}" not found.`);
+
     await t.commit();
     return res.json({
       type: 'success',
