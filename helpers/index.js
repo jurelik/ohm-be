@@ -2,7 +2,7 @@ const { Sequelize } = require('sequelize');
 const crypto = require('crypto');
 const db = require('./db');
 const { create } = require('ipfs-http-client');
-const ipfs = create();
+const ipfs = create('http://127.0.0.1:5001');
 const currentlyUploading = []; //Keep track of clients currently uploading to prevent double uploads.
 
 //Helpers
