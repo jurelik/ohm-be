@@ -32,7 +32,6 @@ module.exports = (sequelize, DataTypes) => {
     },
     format: {
       type: DataTypes.STRING,
-      isIn: [['wav', 'mp3']],
       validate: {
         checkOriginal(value) {
           if (!value && this.type !== 'internal') throw new Error('FileType is required when file is not of type "internal"');

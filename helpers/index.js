@@ -985,7 +985,7 @@ const getFile = async (req, res) => {
 
   try {
     if (!req.params.id) throw new Error('No file id included in request.');
-    const file = await db.query(`SELECT f.id, f.name, a.name AS artist, f.type, f.format, f.license, f.cid, f.tags, f.info FROM files AS f JOIN artists AS a ON a.id = f."artistId" WHERE f.id = :id`, {
+    const file = await db.query(`SELECT f.id, f.name, a.name AS artist, s.title AS "songTitle", f.type, f.format, f.license, f.cid, f.tags, f.info FROM files AS f JOIN artists AS a ON a.id = f."artistId" JOIN songs AS s ON s.id = f."songId" WHERE f.id = :id`, {
       replacements: {
         id: req.params.id
       },
