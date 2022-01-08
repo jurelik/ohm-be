@@ -689,36 +689,36 @@ const postLogin = async (req, res) => {
 }
 
 const postRegister = async (req, res) => {
-  const payload = req.body;
-  const t = await db.transaction();
+  let raw = '';
+  req.on('data', chunk => { raw += chunk }); //Parse form data
+  req.on('end', async () => {
+    const t = await db.transaction();
+    const params = new URLSearchParams(raw);
+    const parsed = Object.fromEntries(params);
 
-  try {
-    if (!req.body || !req.body.artist || !req.body.pw || !req.body.secret) throw new Error('Artist name, password and secret need to be included in the request.') //Check if all data is included
-    if (req.body.secret !== process.env.REGISTRATION_SECRET) throw new Error('Secret does not match.') //Check if secret matches the server secret
-    if (!allowedFormat(req.body.artist)) throw new Error('Username can only contain numbers, letters and underscores.'); //Check username for bad characters
+    try {
+      if (!parsed || !parsed.artist || !parsed.pw || !parsed.confirm) throw new Error('Artist name, password and password confirmation need to be included in the request.') //Check if all data is included
+      if (parsed.pw !== parsed.confirm) throw new Error("Passwords don't match."); //Check if passwords match
+      if (!allowedFormat(parsed.artist)) throw new Error('Username can only contain numbers, letters and underscores.'); //Check username for bad characters
 
-    const { hash, salt } = await generateHash(payload.pw);
-    await db.query(`INSERT INTO artists (name, bio, location, pw, salt, "createdAt", "updatedAt") VALUES (:artist, 'human', 'hydra forest', :hash, :salt, NOW(), NOW())`, {
-      replacements: {
-        artist: payload.artist,
-        hash,
-        salt
-      },
-      type: Sequelize.QueryTypes.INSERT,
-      transaction: t });
+      const { hash, salt } = await generateHash(parsed.pw);
+      await db.query(`INSERT INTO artists (name, bio, location, pw, salt, "createdAt", "updatedAt") VALUES (:artist, 'human', 'hydra forest', :hash, :salt, NOW(), NOW())`, {
+        replacements: {
+          artist: parsed.artist,
+          hash,
+          salt
+        },
+        type: Sequelize.QueryTypes.INSERT,
+        transaction: t });
 
-    await t.commit();
-    return res.json({
-      type: 'success'
-    });
-  }
-  catch (err) {
-    await t.rollback();
-    return res.json({
-      type: 'error',
-      err: err.message
-    });
-  }
+      await t.commit();
+      return res.end('Successfully registered an artist account.');
+    }
+    catch (err) {
+      await t.rollback();
+      return res.end(err.message);
+    }
+  });
 }
 
 const postLatest = async (req, res) => {
