@@ -16,7 +16,6 @@ DB_PASSWORD=password
 DB_URL=localhost
 DB_NAME=ohm-dev
 COOKIE_SECRET=secret
-REGISTRATION_SECRET=secret
 ```
 
 You will also need a reverse proxy capable of serving https on localhost. By default, ohm-be is configured to work with [Caddy](https://caddyserver.com/). You will need to set the path to caddy in `config/development.config.js` or change the script entirely if you are using a different reverse proxy:
