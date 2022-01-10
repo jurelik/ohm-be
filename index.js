@@ -31,7 +31,7 @@ app.post('/login', express.json(), (req, res) => {
   helpers.postLogin(req, res);
 });
 
-app.post('/register', express.json(), (req, res) => {
+app.post('/register', (req, res) => {
   helpers.postRegister(req, res);
 });
 
