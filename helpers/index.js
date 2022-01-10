@@ -688,7 +688,7 @@ const postLogin = async (req, res) => {
   }
 }
 
-const postRegister = async (req, res) => {
+const postRegister = (req, res) => {
   let raw = '';
   req.on('data', chunk => { raw += chunk }); //Parse form data
   req.on('end', async () => {
@@ -716,6 +716,7 @@ const postRegister = async (req, res) => {
     }
     catch (err) {
       await t.rollback();
+      if (err.message === 'Validation error') return res.end('Artist already exists.');
       return res.end(err.message);
     }
   });
