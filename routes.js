@@ -52,3 +52,5 @@ router.post('/comment', express.json(), (req, res) => {
   if (!helpers.userAuthenticated(req, res)) return;
   helpers.postComment(req, res);
 });
+
+module.exports = router;

@@ -1,3 +1,7 @@
+const { Sequelize } = require('sequelize');
+const db = require('./db');
+const ipfs = require('./ipfs');
+const currentlyUploading = []; //Keep track of clients currently uploading to prevent double uploads.
 const helpers = require('./helpers');
 
 const postLogin = async (req, res) => {
