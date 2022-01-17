@@ -2,7 +2,6 @@ const { Sequelize } = require('sequelize');
 const crypto = require('crypto');
 const db = require('./db');
 const ipfs = require('./ipfs');
-const currentlyUploading = []; //Keep track of clients currently uploading to prevent double uploads.
 
 const getSong = async (id, t) => {
   try {
@@ -527,17 +526,6 @@ const generateHash = (pw, salt) => {
   });
 }
 
-const userAuthenticated = (req, res) => {
-  if (!req.session.authenticated) {
-    res.json({
-      type: 'error',
-      err: 'User not authenticated'
-    });
-    return false;
-  }
-  return true;
-}
-
 const initialisePayload = (req) => {
   const payload = req.body;
   payload.artistId = req.session.artistId || null;
@@ -628,7 +616,6 @@ module.exports = {
   formatLicense,
   formatWhereIn,
   generateHash,
-  userAuthenticated,
   initialisePayload,
   checkPassword,
   removePin,

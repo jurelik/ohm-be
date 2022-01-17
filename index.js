@@ -22,6 +22,7 @@ app.use(session({
     sameSite: 'none'
   }
 }));
+
 app.use(routes);
 
 app.listen(process.env.PORT, () => {
