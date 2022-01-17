@@ -1,8 +1,8 @@
 const { Sequelize } = require('sequelize');
-const db = require('./db');
-const ipfs = require('./ipfs');
-const currentlyUploading = []; //Keep track of clients currently uploading to prevent double uploads.
 const helpers = require('./helpers');
+const db = require('./helpers/db');
+const ipfs = require('./helpers/ipfs');
+const currentlyUploading = []; //Keep track of clients currently uploading to prevent double uploads.
 
 const postLogin = async (req, res) => {
   if (req.session.authenticated) { //Check if session is already established
