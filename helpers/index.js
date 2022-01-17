@@ -641,7 +641,7 @@ module.exports = {
   getAlbumShallow,
   getAlbumsByCID,
   getAlbumsBySearch,
-  getAlbumsBySearch,
+  getArtistsBySearch,
   addAlbum,
   addSong,
   addFile,
