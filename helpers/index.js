@@ -305,6 +305,42 @@ const getAlbumsBySearch = async (payload, t) => {
   }
 }
 
+const getArtistsBySearch = async (payload, t) => {
+  try {
+    if (payload.loadMore && !payload.lastItem) throw new Error('Last item reached.'); //If user clicks load more with nothing loaded on initial search
+    const artists = await db.query(`SELECT id, name, location FROM artists WHERE name LIKE :searchQuery${payload.loadMore ? ` AND id < :lastItemId` : ''} ORDER BY id DESC LIMIT 10`, {
+      replacements: {
+        searchQuery: `%${payload.searchQuery}%`,
+        lastItemId: payload.lastItem ? payload.lastItem.id : null
+      },
+      type: Sequelize.QueryTypes.SELECT,
+      transaction: t });
+
+    if (payload.loadMore && artists.length === 0) throw new Error('Last item reached.');
+
+    for (let artist of artists) {
+      //Check if user is following the artist
+      const following = await db.query(`SELECT id FROM follows WHERE "followerId" = :sessionArtistId AND "followingId" = :artistId`, {
+        replacements: {
+          sessionArtistId: payload.artistId,
+          artistId: artist.id
+        },
+        type: Sequelize.QueryTypes.SELECT,
+        transaction: t });
+
+      if (following.length === 1) artist.following = true;
+      else artist.following = false;
+
+      artist.type = 'artist'; //Include type information
+    }
+
+    return artists;
+  }
+  catch (err) {
+    throw err;
+  }
+}
+
 const addAlbum = async (payload, t) => {
   if (!allowedFormat(payload.album.title)) throw new Error('Album title can only include letters, numbers and underscores.'); //Check for bad characters in title
   const formattedTags = formatTags(payload.album.tags); //Format and trim tags
@@ -604,6 +640,7 @@ module.exports = {
   getAlbum,
   getAlbumShallow,
   getAlbumsByCID,
+  getAlbumsBySearch,
   getAlbumsBySearch,
   addAlbum,
   addSong,
