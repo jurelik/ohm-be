@@ -252,14 +252,31 @@ const getAlbumsByCID = async (cids, t) => {
     if (!formatted) return [];
 
     //Get album
-    const albums = await db.query(`SELECT al.id, al.title, ar.name AS artist, al.cid, al.tags, (SELECT COUNT(s.id) FROM songs AS s WHERE "albumId" = al.id) AS songs, al."createdAt" FROM albums AS al JOIN artists AS ar ON ar.id = al."artistId" WHERE al.cid IN (:formatted) ORDER BY al.id DESC`, {
+    const albums = await db.query(`SELECT al.id, al.title, ar.name AS artist, al.cid, al.tags, al."createdAt" FROM albums AS al JOIN artists AS ar ON ar.id = al."artistId" WHERE al.cid IN (:formatted) ORDER BY al.id DESC`, {
       replacements: {
         formatted
       },
       type: Sequelize.QueryTypes.SELECT,
       transaction: t });
 
-    for (let album of albums) album.type = 'album'; //Append additional data to album
+    for (let album of albums) {
+      //Get shallow songs to enable playback
+      album.songs = [];
+      const songs = await db.query(`SELECT id FROM songs WHERE "albumId" = :id`, {
+        replacements: {
+          id: album.id
+        },
+        type: Sequelize.QueryTypes.SELECT,
+        transaction: t });
+
+      for (let _song of songs) {
+        let song = await getSongShallow(_song.id, t);
+        album.songs.push(song);
+      }
+
+      album.type = 'album'; //Append additional data to album
+    }
+
     return albums;
   }
   catch (err) {
@@ -275,7 +292,7 @@ const getAlbumsBySearch = async (payload, t) => {
     //Get albums
     switch (payload.searchBy) {
       case 'title':
-        albums = await db.query(`SELECT al.id, al.title, ar.name AS artist,  al.cid, al.tags, (SELECT COUNT(s.id) FROM songs AS s WHERE "albumId" = al.id) AS songs, al."createdAt" FROM albums AS al JOIN artists AS ar ON ar.id = al."artistId" WHERE al.title LIKE :searchQuery ${payload.loadMore ? `AND al.id < :lastItemId` : ''} ORDER BY al.id DESC LIMIT 10`, {
+        albums = await db.query(`SELECT al.id, al.title, ar.name AS artist,  al.cid, al.tags, al."createdAt" FROM albums AS al JOIN artists AS ar ON ar.id = al."artistId" WHERE al.title LIKE :searchQuery ${payload.loadMore ? `AND al.id < :lastItemId` : ''} ORDER BY al.id DESC LIMIT 10`, {
           replacements: {
             searchQuery: `%${payload.searchQuery}%`,
             lastItemId: payload.lastItem ? payload.lastItem.id : null
@@ -284,7 +301,7 @@ const getAlbumsBySearch = async (payload, t) => {
           transaction: t });
         break;
       case 'tags':
-        albums = await db.query(`SELECT al.id, al.title, ar.name AS artist,  al.cid, al.tags, (SELECT COUNT(s.id) FROM songs AS s WHERE "albumId" = al.id) AS songs, al."createdAt" FROM albums AS al JOIN artists AS ar ON ar.id = al."artistId" WHERE :searchQuery = ANY(al.tags) ${payload.loadMore ? `AND al.id < :lastItemId` : ''} ORDER BY al.id DESC LIMIT 10`, {
+        albums = await db.query(`SELECT al.id, al.title, ar.name AS artist,  al.cid, al.tags, al."createdAt" FROM albums AS al JOIN artists AS ar ON ar.id = al."artistId" WHERE :searchQuery = ANY(al.tags) ${payload.loadMore ? `AND al.id < :lastItemId` : ''} ORDER BY al.id DESC LIMIT 10`, {
           replacements: {
             searchQuery: payload.searchQuery,
             lastItemId: payload.lastItem ? payload.lastItem.id : null
@@ -297,7 +314,23 @@ const getAlbumsBySearch = async (payload, t) => {
 
     if (payload.loadMore && albums.length === 0) throw new Error('Last item reached.');
 
-    for (let album of albums) album.type = 'album'; //Append additional data to album
+    for (let album of albums) {
+      //Get shallow songs to enable playback
+      album.songs = [];
+      const songs = await db.query(`SELECT id FROM songs WHERE "albumId" = :id`, {
+        replacements: {
+          id: album.id
+        },
+        type: Sequelize.QueryTypes.SELECT,
+        transaction: t });
+
+      for (let _song of songs) {
+        let song = await getSongShallow(_song.id, t);
+        album.songs.push(song);
+      }
+
+      album.type = 'album'; //Append additional data to album
+    }
     return albums;
   }
   catch (err) {
