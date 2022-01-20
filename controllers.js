@@ -373,7 +373,7 @@ const postUpload = async (req, res) => {
     res.append('X-Accel-Buffering', 'no'); //This adds the X-Accel-Buffering header to the response, which allows NGINX to pass through individual res.writes
     // BLACK MAGIC END
 
-    uTimeout = uploadTimeout({ //Send progress every second
+    uTimeout = helpers.uploadTimeout({ //Send progress every second
       res,
       cid,
       controller,
