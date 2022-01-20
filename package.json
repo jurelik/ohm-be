@@ -1,6 +1,6 @@
 {
   "name": "ohm-be",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "backend for ohm",
   "main": "index.js",
   "scripts": {
