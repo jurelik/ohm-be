@@ -1,6 +1,6 @@
 {
   "name": "ohm-be",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "backend for ohm",
   "main": "index.js",
   "scripts": {
@@ -30,7 +30,7 @@
     "dotenv-flow": "^3.2.0",
     "express": "^4.17.1",
     "express-session": "^1.17.2",
-    "ipfs-http-client": "^52.0.3",
+    "ipfs-http-client": "^55.0.0",
     "node-cron": "^3.0.0",
     "pg": "^8.7.1",
     "pg-hstore": "^2.3.4",
