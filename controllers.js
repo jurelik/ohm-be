@@ -6,10 +6,21 @@ const currentlyUploading = []; //Keep track of clients currently uploading to pr
 
 const postLogin = async (req, res) => {
   if (req.session.authenticated) { //Check if session is already established
-    return res.json({
-      type: 'success',
-      session: req.session
-    });
+    try {
+      const id = process.env.NODE_ENV === 'development' ? null : await ipfs.id(); //Get server multiaddr
+
+      return res.json({
+        type: 'success',
+        session: req.session,
+        multiaddr: id ? `/p2p/${id.id}` : null
+      });
+    }
+    catch (err) {
+      return res.json({
+        type: 'error',
+        err: err.message
+      });
+    }
   }
 
   const payload = req.body;
