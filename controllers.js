@@ -20,7 +20,7 @@ const postLogin = async (req, res) => {
 
     if (payload.artist && payload.pw) {
       const artistId = await helpers.checkPassword(payload, t);
-      const id = process.NODE_ENV === 'development' ? null : await ipfs.id(); //Get server multiaddr
+      const id = process.env.NODE_ENV === 'development' ? null : await ipfs.id(); //Get server multiaddr
 
       //Append data to session and include cookie in response
       req.session.authenticated = true;
