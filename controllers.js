@@ -20,6 +20,7 @@ const postLogin = async (req, res) => {
 
     if (payload.artist && payload.pw) {
       const artistId = await helpers.checkPassword(payload, t);
+      const id = process.NODE_ENV === 'development' ? null : await ipfs.id(); //Get server multiaddr
 
       //Append data to session and include cookie in response
       req.session.authenticated = true;
@@ -29,7 +30,8 @@ const postLogin = async (req, res) => {
       await t.commit();
       return res.json({
         type: 'success',
-        session: req.session
+        session: req.session,
+        multiaddr: id ? `/p2p/${id.id}` : null
       });
     }
     else throw new Error('Artist or password not included in payload');
